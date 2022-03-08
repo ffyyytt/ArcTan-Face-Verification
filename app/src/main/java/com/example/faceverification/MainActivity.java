@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
         try{
             ImageProcessor imageProcessor = new ImageProcessor.Builder()
                     .add(new ResizeWithCropOrPadOp(224, 224))
-                    //.add(new DequantizeOp(0, 1/255.0F))
+                    .add(new DequantizeOp(0, 1/255.0F))
                     .build();
             File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), "/model.tflite");
             MLHandler model = new MLHandler(file, imageProcessor);
