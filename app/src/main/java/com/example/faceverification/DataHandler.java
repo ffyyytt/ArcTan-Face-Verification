@@ -16,4 +16,16 @@ public class DataHandler {
         fileChannel.write(byteBuffer);
         fileChannel.close();
     }
+
+    public float[] loadFile(String filename, int size) throws IOException {
+        float[] result = new float[size];
+
+        FileChannel fileChannel = new FileOutputStream(filename).getChannel();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(4*size);
+        byteBuffer.clear();
+        fileChannel.read(byteBuffer);
+        byteBuffer.rewind();
+        byteBuffer.asFloatBuffer().get(result);
+        return result;
+    }
 }
