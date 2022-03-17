@@ -2,6 +2,8 @@ package com.example.faceverification;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.media.ExifInterface;
@@ -18,8 +20,52 @@ public class Utils {
         return bitmap;
     }
 
+    public static Bitmap addPaddingTopForBitmap(Bitmap bitmap, int paddingTop) {
+        Bitmap outputBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight() + paddingTop, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(outputBitmap);
+        canvas.drawColor(Color.BLACK);
+        canvas.drawBitmap(bitmap, 0, paddingTop, null);
+        return outputBitmap;
+    }
+
+    public static Bitmap addPaddingBottomForBitmap(Bitmap bitmap, int paddingBottom) {
+        Bitmap outputBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight() + paddingBottom, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(outputBitmap);
+        canvas.drawColor(Color.BLACK);
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        return outputBitmap;
+    }
+
+
+    public static Bitmap addPaddingRightForBitmap(Bitmap bitmap, int paddingRight) {
+        Bitmap outputBitmap = Bitmap.createBitmap(bitmap.getWidth() + paddingRight, bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(outputBitmap);
+        canvas.drawColor(Color.BLACK);
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        return outputBitmap;
+    }
+
+    public static Bitmap addPaddingLeftForBitmap(Bitmap bitmap, int paddingLeft) {
+        Bitmap outputBitmap = Bitmap.createBitmap(bitmap.getWidth() + paddingLeft, bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(outputBitmap);
+        canvas.drawColor(Color.BLACK);
+        canvas.drawBitmap(bitmap, paddingLeft, 0, null);
+        return outputBitmap;
+    }
+
     public static Bitmap resizeKeepRation(Bitmap targetBmp,int reqHeightInPixels,int reqWidthInPixels)
     {
+        if (targetBmp.getWidth() < targetBmp.getHeight())
+        {
+            targetBmp = addPaddingLeftForBitmap(targetBmp, (targetBmp.getHeight() - targetBmp.getWidth()) / 2);
+            targetBmp = addPaddingRightForBitmap(targetBmp, targetBmp.getHeight() - targetBmp.getWidth());
+        }
+        else if (targetBmp.getWidth() > targetBmp.getHeight())
+        {
+            targetBmp = addPaddingTopForBitmap(targetBmp, (targetBmp.getWidth() - targetBmp.getHeight()) / 2);
+            targetBmp = addPaddingBottomForBitmap(targetBmp, targetBmp.getWidth() - targetBmp.getHeight());
+        }
+
         Matrix matrix = new Matrix();
         matrix.setRectToRect(new RectF(0, 0, targetBmp.getWidth(), targetBmp.getHeight()), new RectF(0, 0, reqWidthInPixels, reqHeightInPixels), Matrix.ScaleToFit.CENTER);
         Bitmap scaledBitmap = Bitmap.createBitmap(targetBmp, 0, 0, targetBmp.getWidth(), targetBmp.getHeight(), matrix, true);

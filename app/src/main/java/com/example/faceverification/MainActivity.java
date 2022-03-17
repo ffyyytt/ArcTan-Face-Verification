@@ -70,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
             imageView.setImageBitmap(bitmap);
             Log.d("DEBUG", bitmap.getHeight() + " " + bitmap.getWidth());
 
-
-
         } catch (IOException e){
             Log.e("Error", "Error infer", e);
         }
