@@ -25,7 +25,7 @@ public class MainApplication extends Application {
         Paper.init(this);
         users = Paper.book().read(KEY_USERS, new ArrayList<>());
         updateMapUsers();
-        Log.d("rumdebug", "onCreate: 123123");
+        Log.d("onCreate", "Update users");
     }
 
     private void updateMapUsers() {

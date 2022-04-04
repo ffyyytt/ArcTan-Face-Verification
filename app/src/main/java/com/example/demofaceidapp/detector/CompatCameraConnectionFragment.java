@@ -48,7 +48,7 @@ public class CompatCameraConnectionFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        Log.d("rumdebug", "onResume: camera fragment");
+        Log.d("onResume", "Camera fragment");
     }
 
 
