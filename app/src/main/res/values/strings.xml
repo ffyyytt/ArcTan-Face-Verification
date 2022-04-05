@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">Face Verification</string>
+    <string name="app_name">Demo FaceIDApp</string>
+
+    <string name="camera_guide_face_left">Hướng sang trái</string>
+    <string name="camera_guide_face_right">Hướng sang phải</string>
+    <string name="camera_guide_face_upward">Hướng lên</string>
+    <string name="camera_guide_face_downward">Hướng xuống</string>
+    <string name="camera_guide_face_straight">Hướng chính diện</string>
 </resources>
