@@ -6,6 +6,22 @@
         <entry key="..\:/HCMUS/KLTN/ArcTan-Face-Verification/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/HCMUS/KLTN/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/HCMUS/KLTN/app/src/main/res/layout/activity_main2.xml" value="0.11322463768115942" />
+        <entry key="../../../../layout/custom_preview.xml" value="0.30885416666666665" />
+        <entry key="..\:/Github/ArcTan-Face-Verification/app/src/main/res/layout/activity_main.xml" value="0.20425724637681159" />
+        <entry key="..\:/Github/ArcTan-Face-Verification/app/src/main/res/layout/fragment_camera_main.xml" value="0.15715579710144928" />
+        <entry key="..\:/Github/ArcTan-Face-Verification/app/src/main/res/layout/tfe_od_activity_camera.xml" value="0.15715579710144928" />
+        <entry key="..\:/Github/ArcTan-Face-Verification/app/src/main/res/layout/tfe_od_camera_connection_fragment_tracking.xml" value="0.15715579710144928" />
+        <entry key="app/src/main/res/drawable/bottom_sheet_bg.xml" value="0.2055" />
+        <entry key="app/src/main/res/drawable/ic_baseline_switch_camera_24.xml" value="0.2055" />
+        <entry key="app/src/main/res/layout/activity_add_face.xml" value="0.182518115942029" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.182518115942029" />
+        <entry key="app/src/main/res/layout/activity_user_list.xml" value="0.13697916666666668" />
+        <entry key="app/src/main/res/layout/dialog_create_user.xml" value="0.17708333333333334" />
+        <entry key="app/src/main/res/layout/fragment_camera_main.xml" value="0.19067028985507245" />
+        <entry key="app/src/main/res/layout/tfe_od_activity_camera.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/tfe_od_camera_connection_fragment_tracking.xml" value="0.19067028985507245" />
+        <entry key="app/src/main/res/layout/tfe_od_layout_bottom_sheet.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/view_user_list_item.xml" value="0.13697916666666668" />
       </map>
     </option>
   </component>
