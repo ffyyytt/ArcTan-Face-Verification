@@ -4,7 +4,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 
-import com.zwp.mobilefacenet.MyUtil;
+import com.example.demofaceidapp.detector.utils.MyUtil;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -23,9 +23,9 @@ public class MTCNN {
     private float rNetThreshold = 0.7f;
     private float oNetThreshold = 0.7f;
 
-    private static final String MODEL_FILE_PNET = "pnet.tflite";
-    private static final String MODEL_FILE_RNET = "rnet.tflite";
-    private static final String MODEL_FILE_ONET = "onet.tflite";
+    private static final String MODEL_FILE_PNET = "detection_pnet.tflite";
+    private static final String MODEL_FILE_RNET = "detection_rnet.tflite";
+    private static final String MODEL_FILE_ONET = "detection_onet.tflite";
 
     private Interpreter pInterpreter;
     private Interpreter rInterpreter;

@@ -17,6 +17,9 @@ import java.io.InputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import com.example.demofaceidapp.mtcnn.Box;
+
+
 public class MyUtil {
 
     /**
@@ -171,6 +174,26 @@ public class MyUtil {
             }
         }
         return out;
+    }
+
+    /**
+     * 截取box中指定的矩形框(越界要处理)，并resize到size*size大小，返回数据存放到data中。
+     * @param bitmap
+     * @param box
+     * @param size
+     * return
+     */
+    public static float[][][] cropAndResize(Bitmap bitmap, Box box, int size) {
+        // crop and resize
+        Matrix matrix = new Matrix();
+        float scaleW = 1.0f * size / box.width();
+        float scaleH = 1.0f * size / box.height();
+        matrix.postScale(scaleW, scaleH);
+        Rect rect = box.transform2Rect();
+        Bitmap croped = Bitmap.createBitmap(
+                bitmap, rect.left, rect.top, box.width(), box.height(), matrix, true);
+
+        return normalizeImage(croped);
     }
 
     public static void l2Normalize(float[][] embeddings, double epsilon) {
