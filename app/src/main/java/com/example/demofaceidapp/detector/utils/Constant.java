@@ -1,9 +1,8 @@
 package com.example.demofaceidapp.detector.utils;
 
 public class Constant {
-    public static final int TYPE_ADD_FACE_MANUAL = 1;
-    public static final int TYPE_ADD_FACE_AUTO = 2;
-    public static final int TYPE_RECOGNIZE_FACE = 3;
+    public static final int TYPE_ADD_FACE_AUTO = 1;
+    public static final int TYPE_RECOGNIZE_FACE = 2;
 
     public static final String SIDE_STRAIGHT = "straight";
     public static final String SIDE_UPWARD = "upward";
@@ -17,8 +16,7 @@ public class Constant {
     public static final int ACCURACY_HIGH = 1;
     public static final int ACCURACY_VERY_HIGH = 2;
 
-    public static final int MODE_MANUAL = 0;
-    public static final int MODE_AUTO = 1;
+    public static final int MODE_AUTO = 0;
 
     public static final String KEY_CONFIG = "key_config";
     public static final String KEY_APP_SCREEN_SAVER = "key_app_screensaver";

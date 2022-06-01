@@ -28,7 +28,7 @@ public class FaceManager {
                 .add(new ResizeWithCropOrPadOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE))
                 .add(new DequantizeOp(0, 1 / 255.0F))
                 .build();
-        mlHandler = new MLHandler(context.getAssets(), "model.tflite", imageProcessor);
+        mlHandler = new MLHandler(context.getAssets(), "rec_model.tflite", imageProcessor);
 
 //            Bitmap bitmap1 = Utils.resizeKeepRation(Utils.loadImage(Environment.getExternalStorageDirectory().getAbsolutePath() + "/image1.jpg"), 224, 224);
 //            Bitmap bitmap2 = Utils.resizeKeepRation(Utils.loadImage(Environment.getExternalStorageDirectory().getAbsolutePath() + "/image2.jpg"), 224, 224);

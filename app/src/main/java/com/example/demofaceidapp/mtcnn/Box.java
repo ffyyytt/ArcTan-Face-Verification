@@ -2,6 +2,7 @@ package com.example.demofaceidapp.mtcnn;
 
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RectF;
 
 import static java.lang.Math.max;
 

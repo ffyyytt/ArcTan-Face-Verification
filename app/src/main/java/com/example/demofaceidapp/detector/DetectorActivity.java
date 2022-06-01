@@ -24,6 +24,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.hardware.camera2.CameraCharacteristics;
@@ -48,18 +49,19 @@ import com.example.demofaceidapp.detector.tracking.MultiBoxTracker;
 import com.example.demofaceidapp.detector.utils.Constant;
 import com.example.demofaceidapp.detector.utils.FaceUtils;
 import com.example.demofaceidapp.face.FaceManager;
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.face.Face;
-import com.google.mlkit.vision.face.FaceDetection;
-import com.google.mlkit.vision.face.FaceDetector;
-import com.google.mlkit.vision.face.FaceDetectorOptions;
+import com.example.demofaceidapp.mtcnn.Align;
+import com.example.demofaceidapp.mtcnn.Box;
+import com.example.demofaceidapp.mtcnn.MTCNN;
+import com.example.demofaceidapp.spoofing.AntiSpoofing;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 
 import io.paperdb.Paper;
 
@@ -100,36 +102,37 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private MultiBoxTracker tracker;
     private BorderedText borderedText;
     // Face detector
-    private FaceDetector faceDetector;
     // here the preview image is drawn in portrait way
     private Bitmap portraitBmp = null;
     // here the face is cropped and drawn
     private Bitmap faceBmp = null;
-    private double recognizeFaceThreshold = 0.75f;
     private List<String> listFacesVectorString;
     private List<String> listFacesImagePath;
     private List<Bitmap> listFacesBmpPreview;
     private int countFace = 0;
     private boolean isTakenPicture;
     private int userId;
+    private MTCNN mtcnn;
+    private AntiSpoofing fas;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         userId = getIntent().getIntExtra(KEY_USER_ID, -1);
         Paper.init(this);
-        FaceDetectorOptions options =
-                new FaceDetectorOptions.Builder()
-                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-                        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-                        .build();
+
 
         DISPLAY_ADDING_FACE_STEP_NAME = new String[]{getString(R.string.camera_guide_face_left), getString(R.string.camera_guide_face_right), getString(R.string.camera_guide_face_upward), getString(R.string.camera_guide_face_downward), getString(R.string.camera_guide_face_straight)};
-        faceDetector = FaceDetection.getClient(options);
-        if (getIntent().getIntExtra(KEY_CAMERA_MODE, Constant.MODE_MANUAL) == Constant.MODE_MANUAL) {
-            countFace = 5;
-        } else {
+        try {
+            mtcnn = new MTCNN(getAssets());
+            fas = new AntiSpoofing(getAssets());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (getIntent().getIntExtra(KEY_CAMERA_MODE, Constant.MODE_AUTO) == Constant.MODE_AUTO) {
             countFace = 0;
         }
         if (countFace > 0) totalAddingFaceStep = countFace;
@@ -239,25 +242,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             ImageUtils.saveBitmap(croppedBitmap);
         }
 
-        InputImage image = InputImage.fromBitmap(croppedBitmap, 0);
-        faceDetector
-                .process(image)
-                .addOnSuccessListener(faces -> {
-                    if (faces.size() == 0) {
-                        updateResults(currTimestamp, new LinkedList<>());
-//                        uiThreadHandler.post(() -> methodChannel.invokeMethod("face_recognition#faceAdded", "", null));
-                        return;
-                    }
-                    runInBackground(
-                            () -> {
-                                try {
-                                    onFacesDetected(currTimestamp, faces, isAddingFaceFlow);
-                                } catch (Exception e) {
-                                    LOGGER.e("An error occurs %s", e.getMessage());
-                                }
-                            });
-                });
-
+        try {
+            onFacesDetected(currTimestamp, isAddingFaceFlow);
+        } catch (Exception e) {
+            LOGGER.e("An error occurs %s", e.getMessage());
+        }
 
     }
 
@@ -352,8 +341,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             matrix.postRotate(applyRotation);
         }
 
-//        // Account for the already applied rotation, if any, and then determine how
-//        // much scaling is needed for each axis.
+        // Account for the already applied rotation, if any, and then determine how
+        // much scaling is needed for each axis.
 //        final boolean transpose = (Math.abs(applyRotation) + 90) % 180 == 0;
 //        final int inWidth = transpose ? srcHeight : srcWidth;
 //        final int inHeight = transpose ? srcWidth : srcHeight;
@@ -382,7 +371,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     }
 
-    private void onFacesDetected(long currTimestamp, List<Face> faces, boolean add) {
+
+    private void onFacesDetected(long currTimestamp, boolean add) {
         if (croppedBitmap == null) return;
 
         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
@@ -390,7 +380,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         paint.setColor(Color.RED);
         paint.setStyle(Style.STROKE);
         paint.setStrokeWidth(2.0f);
-
 
         final List<SimilarityClassifier.Recognition> mappedRecognitions =
                 new LinkedList<SimilarityClassifier.Recognition>();
@@ -414,29 +403,42 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         final Canvas cvFace = new Canvas(faceBmp);
 
-        Face selectedFace = null;
-        int selectedFaceSize = -1;
-        for (Face face : faces) {
+        Vector<Box> boxes = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5); // 只有这句代码检测人脸，下面都是根据Box在图片中裁减出人脸
 
-            int faceWidth = face.getBoundingBox().right - face.getBoundingBox().left;
-            int faceHeight = face.getBoundingBox().bottom - face.getBoundingBox().top;
-            int faceSize = Math.max(faceWidth, faceHeight);
+        Box selectedBox = null;
+        int selectedBoxSize = -1;
+        for (Box box: boxes) {
+            int boxSize = Math.max(box.width(), box.height());
 
-            if (faceSize > selectedFaceSize) {
-                selectedFace = face;
-                selectedFaceSize = faceSize;
+            if (boxSize > selectedBoxSize){
+                selectedBox = box;
+                selectedBoxSize = boxSize;
             }
         }
-        // get face has max size
-        if (selectedFace != null) {
-            final RectF boundingBox = new RectF(selectedFace.getBoundingBox());
+        selectedBoxSize = -1;
+        // Face alignment, detect bounding box 1 one time
+        cropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);
+        Vector<Box> boxes1 = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5);
+        for (Box box: boxes1) {
+            int boxSize = Math.max(box.width(), box.height());
+
+            if (boxSize > selectedBoxSize){
+                selectedBox = box;
+                selectedBoxSize = boxSize;
+            }
+        }
+
+        if (selectedBox != null) {
+            selectedBox.toSquareShape();
+            selectedBox.limitSquare(cropCopyBitmap.getWidth(), cropCopyBitmap.getHeight());
+            Rect rect1 = selectedBox.transform2Rect();
+            final RectF boundingBox = new RectF(rect1);
 
             // maps crop coordinates to original
             cropToFrameTransform.mapRect(boundingBox);
 
-            Bitmap faceCrop = FaceUtils.cropFaceFromContour(cropCopyBitmap, selectedFace, false, false);
+            Bitmap faceCrop = Align.cropFaceFromContour(cropCopyBitmap, selectedBox);
             if (boundingBox != null && faceCrop != null) {
-
                 float sx = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getWidth();
                 float sy = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getHeight();
                 Matrix matrix = new Matrix();
@@ -459,7 +461,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
                     } else {
                         color = Color.RED;
-                        label = "Stranger";
+                        label = "Người lạ";
                     }
                 }
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
@@ -490,68 +492,17 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 if (faceVector != null && isAddingFaceFlow) {
 
                     long elapseRealTime = SystemClock.elapsedRealtime();
-                    if (countFace > 0) {
-                        if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
-                            if (FaceUtils.isValidFace(selectedFace)) {
-                                lastAddFaceTime = elapseRealTime;
-                                isTakenPicture = false;
-                                currentAddingFaceStep++;
-                                addNewFaceVector(faceVector, faceCrop);
-                                updateInformationUI();
-                                updatePreviewUI();
-                            } else {
-                                isTakenPicture = false;
-                                Toast.makeText(this, "invalid face", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    } else {
-                        String addFaceStatus = FaceUtils.getFaceDirection(selectedFace);
-                        if (!addFaceStatus.isEmpty() && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
+                    if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
+                        if (AntiSpoofing.isValidFace(selectedBox)) {
                             lastAddFaceTime = elapseRealTime;
-                            switch (currentAddingFaceStep) {
-                                case 0:
-                                    // left
-                                    if (addFaceStatus.equals(Constant.SIDE_LEFTWARD)) {
-                                        currentAddingFaceStep = 1;
-                                        updateInformationUI();
-                                        addNewFaceVector(faceVector, faceCrop);
-                                    }
-                                    break;
-                                case 1:
-                                    // right
-                                    if (addFaceStatus.equals(Constant.SIDE_RIGHTWARD)) {
-                                        currentAddingFaceStep = 2;
-                                        updateInformationUI();
-                                        addNewFaceVector(faceVector, faceCrop);
-                                    }
-                                    break;
-                                case 2:
-                                    // up
-                                    if (addFaceStatus.equals(Constant.SIDE_UPWARD)) {
-                                        currentAddingFaceStep = 3;
-                                        updateInformationUI();
-                                        addNewFaceVector(faceVector, faceCrop);
-                                    }
-                                    break;
-                                case 3:
-                                    // down
-                                    if (addFaceStatus.equals(Constant.SIDE_DOWNWARD)) {
-                                        currentAddingFaceStep = 4;
-                                        updateInformationUI();
-                                        addNewFaceVector(faceVector, faceCrop);
-                                    }
-                                    break;
-                                case 4:
-                                    // center
-                                    if (addFaceStatus.equals(Constant.SIDE_STRAIGHT)) {
-                                        // Step done
-                                        currentAddingFaceStep = 5;
-                                        updateInformationUI();
-                                        addNewFaceVector(faceVector, faceCrop);
-                                        updatePreviewUI();
-                                    }
-                                    break;
-                            }
+                            isTakenPicture = false;
+                            currentAddingFaceStep++;
+                            addNewFaceVector(faceVector, faceCrop);
+                            updateInformationUI();
+                            updatePreviewUI();
+                        } else {
+                            isTakenPicture = false;
+                            Toast.makeText(this, "Mặt không hợp lệ", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }

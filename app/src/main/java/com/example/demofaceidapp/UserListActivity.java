@@ -38,16 +38,6 @@ public class UserListActivity extends BaseActivity {
             }
 
             @Override
-            public void onAddManual(int userId) {
-                Intent intent = new Intent(UserListActivity.this, DetectorActivity.class);
-                intent.putExtra(DetectorActivity.KEY_USE_FACING, CameraCharacteristics.LENS_FACING_FRONT);
-                intent.putExtra(DetectorActivity.KEY_CAMERA_MODE, Constant.MODE_MANUAL); // mode auto
-                intent.putExtra(DetectorActivity.KEY_USER_ID, userId);
-                intent.putExtra(DetectorActivity.KEY_ADDING_FACE, true);
-                startActivity(intent);
-            }
-
-            @Override
             public void onDelete(int userId) {
                 getApp().deleteUser(userId);
             }

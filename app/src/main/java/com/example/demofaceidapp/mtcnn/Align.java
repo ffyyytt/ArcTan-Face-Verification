@@ -1,8 +1,20 @@
 package com.example.demofaceidapp.mtcnn;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PointF;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.RectF;
+
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceContour;
 
 /**
  * 人脸对齐矫正
@@ -29,4 +41,24 @@ public class Align {
         matrix.setRotate(-fAngle);
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
+
+    public static Bitmap cropFaceFromContour(Bitmap frame, Box face) {
+        // only get bounding box
+        RectF rect = new RectF(face.transform2Rect());
+        Matrix matrix = new Matrix();
+        matrix.postTranslate(-rect.centerX(), -rect.centerY());
+//        matrix.postRotate(face.getHeadEulerAngleZ());
+        matrix.mapRect(rect);
+        matrix.postTranslate(-rect.left, -rect.top);
+
+        int width = (int) (rect.right - rect.left);
+        int height = (int) (rect.bottom - rect.top);
+        Bitmap faceBmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas cvCropFaceToAdd = new Canvas(faceBmp);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        cvCropFaceToAdd.drawBitmap(frame, matrix, paint);
+        return faceBmp;
+    }
+
 }

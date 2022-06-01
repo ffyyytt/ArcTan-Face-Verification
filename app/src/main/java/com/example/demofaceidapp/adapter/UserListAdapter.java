@@ -61,11 +61,6 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.ViewHo
                 }
             });
 
-            this.binding.btnAddManual.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onAddManual(data.get(getAdapterPosition()).id);
-                }
-            });
 
             this.binding.btnDelete.setOnClickListener(v -> {
                 if (listener != null) {
@@ -80,7 +75,6 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.ViewHo
 
     public interface Listener {
         void onAdd(int userId);
-        void onAddManual(int userId);
         void onDelete(int userId);
     }
 
