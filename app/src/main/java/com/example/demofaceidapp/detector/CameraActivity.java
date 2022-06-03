@@ -66,6 +66,11 @@ import java.util.Locale;
 import com.example.demofaceidapp.detector.env.ImageUtils;
 import com.example.demofaceidapp.detector.env.Logger;
 
+import com.example.demofaceidapp.eye.Classifier;
+import com.example.demofaceidapp.eye.Classifier.Model;
+import com.example.demofaceidapp.eye.Classifier.Recognition;
+import com.example.demofaceidapp.eye.Classifier.Device;
+
 public abstract class CameraActivity extends BaseActivity
         implements OnImageAvailableListener,
         Camera.PreviewCallback,
@@ -102,6 +107,9 @@ public abstract class CameraActivity extends BaseActivity
     private Integer useFacing = null;
     private String cameraId = null;
     private ImageView ivBack;
+    private Model model = Model.QUANTIZED;
+    private Device device = Device.CPU;
+    private int numThreads = -1;
 
     private static boolean allPermissionsGranted(final int[] grantResults) {
         for (int result : grantResults) {
@@ -698,6 +706,21 @@ public abstract class CameraActivity extends BaseActivity
                 return 0;
         }
     }
+
+    protected Model getModel() {
+        return model;
+    }
+
+
+    protected Device getDevice() {
+        return device;
+    }
+
+
+    protected int getNumThreads() {
+        return numThreads;
+    }
+
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
