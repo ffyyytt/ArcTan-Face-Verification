@@ -54,6 +54,13 @@ import com.example.demofaceidapp.mtcnn.Box;
 import com.example.demofaceidapp.mtcnn.MTCNN;
 import com.example.demofaceidapp.spoofing.AntiSpoofing;
 
+import com.example.demofaceidapp.eye.Classifier;
+import com.example.demofaceidapp.eye.Classifier.Model;
+import com.example.demofaceidapp.eye.Classifier.Recognition;
+import com.example.demofaceidapp.eye.Classifier.Device;
+
+
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -114,6 +121,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private int userId;
     private MTCNN mtcnn;
     private AntiSpoofing fas;
+    private Classifier classifier;
+
 
 
     @Override
@@ -148,6 +157,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, getResources().getDisplayMetrics());
         borderedText = new BorderedText(textSizePx);
         borderedText.setTypeface(Typeface.MONOSPACE);
+        recreateClassifier(getModel(), getDevice(), getNumThreads());
+        if (classifier == null) {
+            LOGGER.e("No classifier on preview!");
+            return;
+        }
 
         tracker = new MultiBoxTracker(this);
 
@@ -215,6 +229,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     }
 
 
+
     @Override
     protected void processImage() {
         if (rgbFrameBitmap == null || rgbFrameBitmap.isRecycled()) return;
@@ -242,13 +257,41 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             ImageUtils.saveBitmap(croppedBitmap);
         }
 
-        try {
-            onFacesDetected(currTimestamp, isAddingFaceFlow);
-        } catch (Exception e) {
-            LOGGER.e("An error occurs %s", e.getMessage());
-        }
-
+        runInBackground(
+                () -> {
+                    try {
+                        onFacesDetected(currTimestamp, isAddingFaceFlow);
+                    } catch (Exception e) {
+                        LOGGER.e("An error occurs %s", e.getMessage());
+                    }
+                }
+        );
     }
+
+    private void recreateClassifier(Model model, Device device, int numThreads) {
+        if (classifier != null) {
+            LOGGER.d("Closing classifier.");
+            classifier.close();
+            classifier = null;
+        }
+        if (device == Device.GPU && model == Model.QUANTIZED) {
+            LOGGER.d("Not creating classifier: GPU doesn't support quantized models.");
+            runOnUiThread(
+                    () -> {
+                        Toast.makeText(this, "GPU does not yet supported quantized models.", Toast.LENGTH_LONG)
+                                .show();
+                    });
+            return;
+        }
+        try {
+            LOGGER.d(
+                    "Creating classifier (model=%s, device=%s, numThreads=%d)", model, device, numThreads);
+            classifier = Classifier.create(this, model, device, numThreads);
+        } catch (IOException e) {
+            LOGGER.e(e, "Failed to create classifier.");
+        }
+    }
+
 
     @Override
     protected int getLayoutId() {
@@ -368,7 +411,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     LOGGER.i("showDataCount: " + faceManager.getRegisterCount() + " faces");
                     LOGGER.i("showInference: " + lastProcessingTimeMs + "ms");
                 });
-
     }
 
 
@@ -457,13 +499,24 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 } else {
                     Result result = faceManager.verify(faceBmp);
                     if (result != null) {
-                        color = Color.GREEN;
-                        label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
+                        if (classifier != null) {
+                            color = Color.GREEN;
+
+                            final List<Recognition> results =
+                                    classifier.recognizeImage(rgbFrameBitmap, sensorOrientation); // Change rgbFrameBitmap -> 2 eye images
+                            LOGGER.v("Classify: %s", results);
+                            label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
+
+                        }
+                        else {
+                            label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
+                        }
                     } else {
                         color = Color.RED;
                         label = "Người lạ";
                     }
                 }
+
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
                 if (getCameraFacing() == CameraCharacteristics.LENS_FACING_FRONT) {
