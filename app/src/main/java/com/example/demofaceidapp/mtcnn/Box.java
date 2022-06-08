@@ -40,11 +40,11 @@ public class Box {
     }
 
     public int width() {
-        return box[2] - box[0] + 1;
+        return box[2] - box[0];
     }
 
     public int height() {
-        return box[3] - box[1] + 1;
+        return box[3] - box[1];
     }
 
     // 转为rect

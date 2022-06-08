@@ -2,6 +2,8 @@ package com.example.demofaceidapp.eye;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.graphics.Point;
 import android.graphics.RectF;
 import android.os.SystemClock;
 import android.os.Trace;
@@ -234,7 +236,7 @@ public abstract class Classifier {
         tflite.run(inputImageBuffer.getBuffer(), outputProbabilityBuffer.getBuffer().rewind());
         long endTimeForReference = SystemClock.uptimeMillis();
         Trace.endSection();
-        LOGGER.v("Timecost to run model inference: " + (endTimeForReference - startTimeForReference));
+        LOGGER.v("Timecost to run eye classification model inference: " + (endTimeForReference - startTimeForReference));
 
         // Gets the map of label and probability.
         Map<String, Float> labeledProbability =
@@ -316,6 +318,10 @@ public abstract class Classifier {
             recognitions.add(pq.poll());
         }
         return recognitions;
+    }
+
+    public static Bitmap cropEyeFromOri(Bitmap bitmap, Point eye, int eye_w, int eye_h) {
+        return Bitmap.createBitmap(bitmap, eye.x - (eye_w / 2), eye.y - (eye_h / 2), eye_w, eye_h);
     }
 
     /** Gets the name of the model file stored in Assets. */

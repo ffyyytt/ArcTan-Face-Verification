@@ -474,7 +474,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             selectedBox.toSquareShape();
             selectedBox.limitSquare(cropCopyBitmap.getWidth(), cropCopyBitmap.getHeight());
             Rect rect1 = selectedBox.transform2Rect();
-            final RectF boundingBox = new RectF(rect1);
+            final RectF boundingBox = new RectF(rect1); // Rect Int -> Rect Float
 
             // maps crop coordinates to original
             cropToFrameTransform.mapRect(boundingBox);
@@ -495,16 +495,28 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 final long startTime = SystemClock.uptimeMillis();
                 if (isAddingFaceFlow) {
-                    faceVector = faceManager.extract(faceBmp);
+                    faceVector = faceManager.extract(faceBmp); // Register Stage
                 } else {
-                    Result result = faceManager.verify(faceBmp);
+                    Result result = faceManager.verify(faceBmp);    // Verify Stage
                     if (result != null) {
                         if (classifier != null) {
                             color = Color.GREEN;
+                            int eye_w = Math.round(faceCrop.getWidth() / 18) * 2; // Eye
+                            int eye_h = Math.round(faceCrop.getHeight() / 18) * 2;
 
-                            final List<Recognition> results =
-                                    classifier.recognizeImage(rgbFrameBitmap, sensorOrientation); // Change rgbFrameBitmap -> 2 eye images
-                            LOGGER.v("Classify: %s", results);
+                            Bitmap eye_img1 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
+                            Bitmap eye_img2 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
+
+                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, 24, 24, true);
+                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, 24, 24, true);
+
+
+                            final List<Recognition> results1 =
+                                    classifier.recognizeImage(resize_eye_img1, sensorOrientation);
+                            final List<Recognition> results2 =
+                                    classifier.recognizeImage(resize_eye_img2, sensorOrientation);
+
+                            LOGGER.v("Classify: %s || %s ", results1, results2);
                             label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
 
                         }
