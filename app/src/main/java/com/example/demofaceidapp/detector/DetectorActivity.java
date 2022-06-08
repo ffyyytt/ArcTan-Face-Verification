@@ -516,16 +516,22 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                             final List<Recognition> results2 =
                                     classifier.recognizeImage(resize_eye_img2, sensorOrientation);
 
-                            LOGGER.v("Classify: %s || %s ", results1, results2);
-                            label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
+                            Recognition result1 = results1.get(0);
+                            Recognition result2 = results2.get(0);
+
+                            LOGGER.v("Classify: %s: (%f) || %s: (%f)", result1.getTitle(), result1.getConfidence(), result2.getTitle(), result2.getConfidence());
+                            label = String.format("%s || %s || %s", getApp().getUser(result.faceData.userId).name, result1.getTitle(), result2.getTitle());
+
+                            //                            label = String.format("%s: (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
 
                         }
                         else {
-                            label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
+                            color = Color.RED;
+                            label = String.format("Không hợp lệ: (%s)", getApp().getUser(result.faceData.userId).name);
                         }
                     } else {
                         color = Color.RED;
-                        label = "Người lạ";
+                        label = "Không hợp lệ: (Người lạ)";
                     }
                 }
 
