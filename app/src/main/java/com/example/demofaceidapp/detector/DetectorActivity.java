@@ -457,6 +457,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 selectedBoxSize = boxSize;
             }
         }
+
         selectedBoxSize = -1;
         // Face alignment, detect bounding box 1 one time
         cropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);

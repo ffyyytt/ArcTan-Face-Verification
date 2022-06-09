@@ -239,7 +239,6 @@ public abstract class CameraActivity extends BaseActivity
             if (isAddingFaceFlow()) {
                 layoutAdd.setVisibility(View.VISIBLE);
                 tvProgress.setText(String.format(Locale.US, "%d/%d", getCurrentAddingFaceStep(), getTotalAddingFaceStep()));
-                tvStep.setText(getDisplayCurrentAddingFaceStep());
                 prgBar.setMax(getTotalAddingFaceStep());
                 prgBar.setProgress(getCurrentAddingFaceStep());
 
