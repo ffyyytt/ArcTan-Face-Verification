@@ -6,7 +6,6 @@ import android.util.Log;
 
 import com.example.demofaceidapp.detector.utils.MyUtil;
 import com.example.demofaceidapp.mtcnn.Box;
-import com.google.mlkit.vision.face.Face;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -15,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AntiSpoofing {
-    private static final String MODEL_FILE = "FaceAntiSpoofing.tflite";
+    private static final String MODEL_FILE = "antispoofing_model.tflite";
 
     public static final int INPUT_IMAGE_SIZE = 224; // 需要feed数据的placeholder的图片宽高
     public static final float THRESHOLD = 0.2f; // 设置一个阙值，大于这个值认为是攻击

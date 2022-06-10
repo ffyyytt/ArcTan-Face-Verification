@@ -31,7 +31,7 @@ public class UserListActivity extends BaseActivity {
             public void onAdd(int userId) {
                 Intent intent = new Intent(UserListActivity.this, DetectorActivity.class);
                 intent.putExtra(DetectorActivity.KEY_USE_FACING, CameraCharacteristics.LENS_FACING_FRONT);
-                intent.putExtra(DetectorActivity.KEY_CAMERA_MODE, Constant.MODE_AUTO); // mode auto
+                intent.putExtra(DetectorActivity.KEY_CAMERA_MODE, Constant.MODE_MANUAL); // mode manual
                 intent.putExtra(DetectorActivity.KEY_USER_ID, userId);
                 intent.putExtra(DetectorActivity.KEY_ADDING_FACE, true);
                 startActivity(intent);

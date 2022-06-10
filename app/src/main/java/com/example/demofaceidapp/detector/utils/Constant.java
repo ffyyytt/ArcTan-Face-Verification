@@ -16,7 +16,7 @@ public class Constant {
     public static final int ACCURACY_HIGH = 1;
     public static final int ACCURACY_VERY_HIGH = 2;
 
-    public static final int MODE_AUTO = 0;
+    public static final int MODE_MANUAL = 0;
 
     public static final String KEY_CONFIG = "key_config";
     public static final String KEY_APP_SCREEN_SAVER = "key_app_screensaver";

@@ -2,19 +2,11 @@ package com.example.demofaceidapp.mtcnn;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
-import android.graphics.PointF;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 
-import com.google.mlkit.vision.face.Face;
-import com.google.mlkit.vision.face.FaceContour;
 
 /**
  * 人脸对齐矫正

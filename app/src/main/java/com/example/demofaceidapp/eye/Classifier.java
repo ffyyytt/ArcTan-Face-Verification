@@ -283,7 +283,6 @@ public abstract class Classifier {
         // Creates processor for the TensorImage.
         int cropSize = Math.min(bitmap.getWidth(), bitmap.getHeight());
         int numRoration = sensorOrientation / 90;
-        // TODO(b/143564309): Fuse ops inside ImageProcessor.
         ImageProcessor imageProcessor =
                 new ImageProcessor.Builder()
                         .add(new ResizeWithCropOrPadOp(cropSize, cropSize))

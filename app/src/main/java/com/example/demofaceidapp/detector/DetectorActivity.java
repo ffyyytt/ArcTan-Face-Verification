@@ -52,7 +52,6 @@ import com.example.demofaceidapp.face.FaceManager;
 import com.example.demofaceidapp.mtcnn.Align;
 import com.example.demofaceidapp.mtcnn.Box;
 import com.example.demofaceidapp.mtcnn.MTCNN;
-import com.example.demofaceidapp.spoofing.AntiSpoofing;
 
 import com.example.demofaceidapp.eye.Classifier;
 import com.example.demofaceidapp.eye.Classifier.Model;
@@ -120,7 +119,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private boolean isTakenPicture;
     private int userId;
     private MTCNN mtcnn;
-    private AntiSpoofing fas;
     private Classifier classifier;
 
 
@@ -135,14 +133,13 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         DISPLAY_ADDING_FACE_STEP_NAME = new String[]{getString(R.string.camera_guide_face_left), getString(R.string.camera_guide_face_right), getString(R.string.camera_guide_face_upward), getString(R.string.camera_guide_face_downward), getString(R.string.camera_guide_face_straight)};
         try {
             mtcnn = new MTCNN(getAssets());
-            fas = new AntiSpoofing(getAssets());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        if (getIntent().getIntExtra(KEY_CAMERA_MODE, Constant.MODE_AUTO) == Constant.MODE_AUTO) {
-            countFace = 0;
+        if (getIntent().getIntExtra(KEY_CAMERA_MODE, Constant.MODE_MANUAL) == Constant.MODE_MANUAL) {
+            countFace = 5;
         }
         if (countFace > 0) totalAddingFaceStep = countFace;
         listFacesVectorString = new ArrayList<>();
@@ -257,15 +254,23 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             ImageUtils.saveBitmap(croppedBitmap);
         }
 
-        runInBackground(
-                () -> {
-                    try {
-                        onFacesDetected(currTimestamp, isAddingFaceFlow);
-                    } catch (Exception e) {
-                        LOGGER.e("An error occurs %s", e.getMessage());
+        Vector<Box> boxes = onBoxesDetected();
+
+        if (boxes.size() == 0){
+            updateResults(currTimestamp, new LinkedList<>());
+            return;
+        }
+        else {
+            runInBackground(
+                    () -> {
+                        try {
+                            onFacesDetected(currTimestamp, boxes, isAddingFaceFlow);
+                        } catch (Exception e) {
+                            LOGGER.e("An error occurs %s", e.getMessage());
+                        }
                     }
-                }
-        );
+            );
+        }
     }
 
     private void recreateClassifier(Model model, Device device, int numThreads) {
@@ -413,11 +418,39 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 });
     }
 
-
-    private void onFacesDetected(long currTimestamp, boolean add) {
-        if (croppedBitmap == null) return;
-
+    private Vector<Box> onBoxesDetected(){
+        Vector<Box> boxes = new Vector<>();
+        if (croppedBitmap == null) return boxes;
         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+
+        boxes = mtcnn.detectFaces(croppedBitmap, croppedBitmap.getWidth() / 5); // 只有这句代码检测人脸，下面都是根据Box在图片中裁减出人脸
+
+        if (boxes.size() == 0)
+            return boxes;
+
+        Box selectedBox = null;
+        int selectedBoxSize = -1;
+        for (Box box: boxes) {
+            int boxSize = Math.max(box.width(), box.height());
+
+            if (boxSize > selectedBoxSize){
+                selectedBox = box;
+                selectedBoxSize = boxSize;
+            }
+        }
+        LOGGER.d("Boxes Detected!");
+
+        // Face alignment, detect bounding box 1 one time
+        cropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);
+        Vector<Box> boxes1 = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5);
+        LOGGER.d("Boxes Aligned!");
+
+        return boxes1;
+    }
+
+    private void onFacesDetected(long currTimestamp, Vector<Box> boxes, boolean add) {
+        if (cropCopyBitmap == null) return;
+
         final Paint paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStyle(Style.STROKE);
@@ -445,8 +478,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         final Canvas cvFace = new Canvas(faceBmp);
 
-        Vector<Box> boxes = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5); // 只有这句代码检测人脸，下面都是根据Box在图片中裁减出人脸
-
         Box selectedBox = null;
         int selectedBoxSize = -1;
         for (Box box: boxes) {
@@ -457,19 +488,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 selectedBoxSize = boxSize;
             }
         }
-
-        selectedBoxSize = -1;
-        // Face alignment, detect bounding box 1 one time
-        cropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);
-        Vector<Box> boxes1 = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5);
-        for (Box box: boxes1) {
-            int boxSize = Math.max(box.width(), box.height());
-
-            if (boxSize > selectedBoxSize){
-                selectedBox = box;
-                selectedBoxSize = boxSize;
-            }
-        }
+        LOGGER.d("Selected Box!");
 
         if (selectedBox != null) {
             selectedBox.toSquareShape();
@@ -481,7 +500,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             cropToFrameTransform.mapRect(boundingBox);
 
             Bitmap faceCrop = Align.cropFaceFromContour(cropCopyBitmap, selectedBox);
+            LOGGER.d("Face Cropped!");
+
             if (boundingBox != null && faceCrop != null) {
+                LOGGER.d("Go to Face Extract!");
+
                 float sx = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getWidth();
                 float sy = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getHeight();
                 Matrix matrix = new Matrix();
@@ -496,11 +519,17 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 final long startTime = SystemClock.uptimeMillis();
                 if (isAddingFaceFlow) {
+                    LOGGER.d("Register Face.....");
                     faceVector = faceManager.extract(faceBmp); // Register Stage
+                    LOGGER.d("Registered!");
+
                 } else {
                     Result result = faceManager.verify(faceBmp);    // Verify Stage
+                    LOGGER.d("Verified!");
+
                     if (result != null) {
                         if (classifier != null) {
+                            LOGGER.d("Eye Classification...");
                             color = Color.GREEN;
                             int eye_w = Math.round(faceCrop.getWidth() / 18) * 2; // Eye
                             int eye_h = Math.round(faceCrop.getHeight() / 18) * 2;
@@ -527,14 +556,19 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                         }
                         else {
+                            LOGGER.d("No Classifier Found!");
+
                             color = Color.RED;
                             label = String.format("Không hợp lệ: (%s)", getApp().getUser(result.faceData.userId).name);
                         }
                     } else {
+                        LOGGER.d("Stranger!");
+
                         color = Color.RED;
                         label = "Không hợp lệ: (Người lạ)";
                     }
                 }
+                LOGGER.d("Face Recognized!");
 
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
@@ -550,7 +584,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     }
                     //flip.postScale(1, -1, targetW / 2.0f, targetH / 2.0f);
                     flip.mapRect(boundingBox);
-
                 }
 
                 final SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
@@ -565,7 +598,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                     long elapseRealTime = SystemClock.elapsedRealtime();
                     if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
-                        if (AntiSpoofing.isValidFace(selectedBox)) {
+                        if (FaceUtils.isValidFace(selectedBox)) {
                             lastAddFaceTime = elapseRealTime;
                             isTakenPicture = false;
                             currentAddingFaceStep++;
