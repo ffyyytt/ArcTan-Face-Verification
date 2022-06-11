@@ -121,16 +121,12 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private MTCNN mtcnn;
     private Classifier classifier;
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         userId = getIntent().getIntExtra(KEY_USER_ID, -1);
         Paper.init(this);
 
-
-        DISPLAY_ADDING_FACE_STEP_NAME = new String[]{getString(R.string.camera_guide_face_left), getString(R.string.camera_guide_face_right), getString(R.string.camera_guide_face_upward), getString(R.string.camera_guide_face_downward), getString(R.string.camera_guide_face_straight)};
         try {
             mtcnn = new MTCNN(getAssets());
 
@@ -258,7 +254,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         if (boxes.size() == 0){
             updateResults(currTimestamp, new LinkedList<>());
-            return;
         }
         else {
             runInBackground(
@@ -530,16 +525,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     if (result != null) {
                         if (classifier != null) {
                             LOGGER.d("Eye Classification...");
-                            color = Color.GREEN;
                             int eye_w = Math.round(faceCrop.getWidth() / 18) * 2; // Eye
                             int eye_h = Math.round(faceCrop.getHeight() / 18) * 2;
 
                             Bitmap eye_img1 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
                             Bitmap eye_img2 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
 
-                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, 24, 24, true);
-                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, 24, 24, true);
-
+                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, 48, 48, true);
+                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, 48, 48, true);
 
                             final List<Recognition> results1 =
                                     classifier.recognizeImage(resize_eye_img1, sensorOrientation);
@@ -552,23 +545,25 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                             LOGGER.v("Classify: %s: (%f) || %s: (%f)", result1.getTitle(), result1.getConfidence(), result2.getTitle(), result2.getConfidence());
                             label = String.format("%s || %s || %s", getApp().getUser(result.faceData.userId).name, result1.getTitle(), result2.getTitle());
 
-                            //                            label = String.format("%s: (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
-
+                            color = Color.GREEN;
                         }
                         else {
-                            LOGGER.d("No Classifier Found!");
 
                             color = Color.RED;
                             label = String.format("Không hợp lệ: (%s)", getApp().getUser(result.faceData.userId).name);
-                        }
-                    } else {
-                        LOGGER.d("Stranger!");
 
+                        }
+
+//                        color = Color.GREEN;
+//                        label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
+
+                    } else {
                         color = Color.RED;
                         label = "Không hợp lệ: (Người lạ)";
                     }
+
+                    LOGGER.d("Face Recognized!");
                 }
-                LOGGER.d("Face Recognized!");
 
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 

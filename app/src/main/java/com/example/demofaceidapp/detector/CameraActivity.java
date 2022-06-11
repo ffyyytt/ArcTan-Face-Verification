@@ -107,7 +107,7 @@ public abstract class CameraActivity extends BaseActivity
     private Integer useFacing = null;
     private String cameraId = null;
     private ImageView ivBack;
-    private Model model = Model.QUANTIZED;
+    private Model model = Model.FLOAT;
     private Device device = Device.CPU;
     private int numThreads = -1;
 
@@ -478,13 +478,13 @@ public abstract class CameraActivity extends BaseActivity
         LOGGER.d("onPause " + this);
 
         handlerThread.quitSafely();
-        try {
-            handlerThread.join();
-            handlerThread = null;
-            handler = null;
-        } catch (final InterruptedException e) {
-            LOGGER.e(e, "Exception!");
-        }
+//        try {
+//            handlerThread.join();
+//            handlerThread = null;
+//            handler = null;
+//        } catch (final InterruptedException e) {
+//            LOGGER.e(e, "Exception!");
+//        }
 
         super.onPause();
     }
