@@ -49,6 +49,7 @@ import com.example.demofaceidapp.detector.tracking.MultiBoxTracker;
 import com.example.demofaceidapp.detector.utils.Constant;
 import com.example.demofaceidapp.detector.utils.FaceUtils;
 import com.example.demofaceidapp.face.FaceManager;
+import com.example.demofaceidapp.ml.EyeClsModel;
 import com.example.demofaceidapp.mtcnn.Align;
 import com.example.demofaceidapp.mtcnn.Box;
 import com.example.demofaceidapp.mtcnn.MTCNN;
@@ -58,12 +59,14 @@ import com.example.demofaceidapp.eye.Classifier.Model;
 import com.example.demofaceidapp.eye.Classifier.Recognition;
 import com.example.demofaceidapp.eye.Classifier.Device;
 
-
+import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -118,8 +121,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private int countFace = 0;
     private boolean isTakenPicture;
     private int userId;
+    private int resizeImageSize = 24;
     private MTCNN mtcnn;
     private Classifier classifier;
+    private String result1;
+    private String result2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -413,6 +419,67 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 });
     }
 
+    private int classifyEyeImage(EyeClsModel model, Bitmap image){
+        // Creates inputs for reference.
+        TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 24, 24, 3}, DataType.FLOAT32);
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * resizeImageSize * resizeImageSize * 3);
+        byteBuffer.order(ByteOrder.nativeOrder());
+
+        int[] intValues = new int[resizeImageSize * resizeImageSize];
+        image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+
+        int pixel = 0;
+
+        // Iterate over each pixel and extract R, G, and B values. Add those values individually to the byte buffer.
+        for(int i = 0; i < resizeImageSize; i ++){
+            for(int j = 0; j < resizeImageSize; j++){
+                int val = intValues[pixel++]; // RGB
+                byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 255));
+                byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 255));
+                byteBuffer.putFloat((val & 0xFF) * (1.f / 255));
+            }
+        }
+
+        inputFeature0.loadBuffer(byteBuffer);
+
+        // Runs model inference and gets result.
+        EyeClsModel.Outputs outputs = model.process(inputFeature0);
+        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+
+        float[] confidences = outputFeature0.getFloatArray();
+
+        // Find the index of the class with the highest confidence.
+        int maxPos = 0;
+        float maxConfidence = 0;
+        for (int i = 0; i < confidences.length; i++) {
+            if (confidences[i] > maxConfidence) {
+                maxConfidence = confidences[i];
+                maxPos = i;
+            }
+        }
+
+        return maxPos;
+    }
+
+    private void classify(Bitmap image1, Bitmap image2){
+        try {
+            EyeClsModel model = EyeClsModel.newInstance(getApplicationContext());
+            int maxPosImage1 = classifyEyeImage(model, image1);
+            int maxPosImage2 = classifyEyeImage(model, image2);
+
+            String[] classes = {"Open", "Close"};
+            result1 = classes[maxPosImage1];
+            result2 = classes[maxPosImage2];
+
+            // Releases model resources if no longer used.
+            model.close();
+
+        } catch (IOException e) {
+            // TODO Handle the exception
+            LOGGER.e(e, "Failed to classify.");
+        }
+    }
+
     private Vector<Box> onBoxesDetected(){
         Vector<Box> boxes = new Vector<>();
         if (croppedBitmap == null) return boxes;
@@ -514,37 +581,34 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 final long startTime = SystemClock.uptimeMillis();
                 if (isAddingFaceFlow) {
-                    LOGGER.d("Register Face.....");
                     faceVector = faceManager.extract(faceBmp); // Register Stage
-                    LOGGER.d("Registered!");
-
                 } else {
                     Result result = faceManager.verify(faceBmp);    // Verify Stage
-                    LOGGER.d("Verified!");
 
                     if (result != null) {
                         if (classifier != null) {
-                            LOGGER.d("Eye Classification...");
-                            int eye_w = Math.round(faceCrop.getWidth() / 18) * 2; // Eye
-                            int eye_h = Math.round(faceCrop.getHeight() / 18) * 2;
+                            int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
+                            int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
+                            LOGGER.d("Eye width ori: %f || Eye height ori: %f", eye_w, eye_h);
 
                             Bitmap eye_img1 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
                             Bitmap eye_img2 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
 
-                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, 48, 48, true);
-                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, 48, 48, true);
+                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
+                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
 
-                            final List<Recognition> results1 =
-                                    classifier.recognizeImage(resize_eye_img1, sensorOrientation);
-                            final List<Recognition> results2 =
-                                    classifier.recognizeImage(resize_eye_img2, sensorOrientation);
+                            classify(resize_eye_img1, resize_eye_img2);
 
-                            Recognition result1 = results1.get(0);
-                            Recognition result2 = results2.get(0);
+//                            final List<Recognition> results1 =
+//                                    classifier.recognizeImage(resize_eye_img1, sensorOrientation);
+//                            final List<Recognition> results2 =
+//                                    classifier.recognizeImage(resize_eye_img2, sensorOrientation);
+//
+//                            Recognition result1 = results1.get(0);
+//                            Recognition result2 = results2.get(0);
 
-                            LOGGER.v("Classify: %s: (%f) || %s: (%f)", result1.getTitle(), result1.getConfidence(), result2.getTitle(), result2.getConfidence());
-                            label = String.format("%s || %s || %s", getApp().getUser(result.faceData.userId).name, result1.getTitle(), result2.getTitle());
-
+                            LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
+                            label = String.format("%s || %s | %s", getApp().getUser(result.faceData.userId).name, result1, result2);
                             color = Color.GREEN;
                         }
                         else {
