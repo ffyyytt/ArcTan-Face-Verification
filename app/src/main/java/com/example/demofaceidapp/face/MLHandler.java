@@ -47,7 +47,7 @@ public class MLHandler {
     }
 
     public float[] extractFeature(TensorImage tensorImage) {
-        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 512}, DataType.FLOAT32);
+        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 1024}, DataType.FLOAT32);
         model.run(imageProcessor.process(tensorImage).getBuffer(), feature.getBuffer());
         return feature.getFloatArray();
     }

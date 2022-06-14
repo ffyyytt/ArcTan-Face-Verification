@@ -54,11 +54,6 @@ import com.example.demofaceidapp.mtcnn.Align;
 import com.example.demofaceidapp.mtcnn.Box;
 import com.example.demofaceidapp.mtcnn.MTCNN;
 
-import com.example.demofaceidapp.eye.Classifier;
-import com.example.demofaceidapp.eye.Classifier.Model;
-import com.example.demofaceidapp.eye.Classifier.Recognition;
-import com.example.demofaceidapp.eye.Classifier.Device;
-
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
@@ -123,7 +118,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private int userId;
     private int resizeImageSize = 24;
     private MTCNN mtcnn;
-    private Classifier classifier;
     private String result1;
     private String result2;
 
@@ -156,11 +150,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, getResources().getDisplayMetrics());
         borderedText = new BorderedText(textSizePx);
         borderedText.setTypeface(Typeface.MONOSPACE);
-        recreateClassifier(getModel(), getDevice(), getNumThreads());
-        if (classifier == null) {
-            LOGGER.e("No classifier on preview!");
-            return;
-        }
 
         tracker = new MultiBoxTracker(this);
 
@@ -271,30 +260,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         }
                     }
             );
-        }
-    }
-
-    private void recreateClassifier(Model model, Device device, int numThreads) {
-        if (classifier != null) {
-            LOGGER.d("Closing classifier.");
-            classifier.close();
-            classifier = null;
-        }
-        if (device == Device.GPU && model == Model.QUANTIZED) {
-            LOGGER.d("Not creating classifier: GPU doesn't support quantized models.");
-            runOnUiThread(
-                    () -> {
-                        Toast.makeText(this, "GPU does not yet supported quantized models.", Toast.LENGTH_LONG)
-                                .show();
-                    });
-            return;
-        }
-        try {
-            LOGGER.d(
-                    "Creating classifier (model=%s, device=%s, numThreads=%d)", model, device, numThreads);
-            classifier = Classifier.create(this, model, device, numThreads);
-        } catch (IOException e) {
-            LOGGER.e(e, "Failed to create classifier.");
         }
     }
 
@@ -581,42 +546,31 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 final long startTime = SystemClock.uptimeMillis();
                 if (isAddingFaceFlow) {
+                    LOGGER.d("Go to face register");
+
                     faceVector = faceManager.extract(faceBmp); // Register Stage
                 } else {
+                    LOGGER.d("Go to face verify");
+
                     Result result = faceManager.verify(faceBmp);    // Verify Stage
-
                     if (result != null) {
-                        if (classifier != null) {
-                            int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
-                            int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
-                            LOGGER.d("Eye width ori: %f || Eye height ori: %f", eye_w, eye_h);
+                        int eye_w = Math.round(faceCrop.getWidth() / 10) * 2; // Eye
+                        int eye_h = Math.round(faceCrop.getHeight() / 10) * 2;
+                        LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
 
-                            Bitmap eye_img1 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
-                            Bitmap eye_img2 = classifier.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
+                        Bitmap eye_img1 = FaceUtils.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
+                        Bitmap eye_img2 = FaceUtils.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
 
-                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
-                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
+                        Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
+                        Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
 
-                            classify(resize_eye_img1, resize_eye_img2);
+                        classify(resize_eye_img1, resize_eye_img2);
 
-//                            final List<Recognition> results1 =
-//                                    classifier.recognizeImage(resize_eye_img1, sensorOrientation);
-//                            final List<Recognition> results2 =
-//                                    classifier.recognizeImage(resize_eye_img2, sensorOrientation);
-//
-//                            Recognition result1 = results1.get(0);
-//                            Recognition result2 = results2.get(0);
 
-                            LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
-                            label = String.format("%s || %s | %s", getApp().getUser(result.faceData.userId).name, result1, result2);
-                            color = Color.GREEN;
-                        }
-                        else {
+                        LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
+                        label = String.format("%s || %s | %s", getApp().getUser(result.faceData.userId).name, result1, result2);
+                        color = Color.GREEN;
 
-                            color = Color.RED;
-                            label = String.format("Không hợp lệ: (%s)", getApp().getUser(result.faceData.userId).name);
-
-                        }
 
 //                        color = Color.GREEN;
 //                        label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
@@ -654,7 +608,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 result.setValid(tracker.checkFaceDetectedIsInFrame(boundingBox));
                 mappedRecognitions.add(result);
                 if (faceVector != null && isAddingFaceFlow) {
-
                     long elapseRealTime = SystemClock.elapsedRealtime();
                     if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
                         if (FaceUtils.isValidFace(selectedBox)) {

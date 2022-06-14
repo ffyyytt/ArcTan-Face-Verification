@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 import com.example.demofaceidapp.mtcnn.Box;
 import java.io.File;
@@ -116,5 +117,8 @@ public class FaceUtils {
         return true;
     }
 
+    public static Bitmap cropEyeFromOri(Bitmap bitmap, Point eye, int eye_w, int eye_h) {
+        return Bitmap.createBitmap(bitmap, eye.x - (eye_w / 2), eye.y - (eye_h / 2), eye_w, eye_h);
+    }
 
 }
