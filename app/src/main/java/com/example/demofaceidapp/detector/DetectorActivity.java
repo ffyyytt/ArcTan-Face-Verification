@@ -53,6 +53,7 @@ import com.example.demofaceidapp.ml.EyeClsModel;
 import com.example.demofaceidapp.mtcnn.Align;
 import com.example.demofaceidapp.mtcnn.Box;
 import com.example.demofaceidapp.mtcnn.MTCNN;
+import com.example.demofaceidapp.spoofing.FaceAntiSpoofing;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
@@ -91,6 +92,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     long lastAddFaceTime = 0;
     private Integer sensorOrientation;
     private FaceManager faceManager;
+    private FaceAntiSpoofing faceAntiSpoofing;
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
@@ -155,6 +157,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         tracker = new MultiBoxTracker(this);
 
         faceManager = new FaceManager(this, getApp());
+        faceAntiSpoofing = new FaceAntiSpoofing(this);
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
 
@@ -457,7 +460,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         if (croppedBitmap == null) return boxes;
         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
 
-        boxes = mtcnn.detectFaces(croppedBitmap, croppedBitmap.getWidth() / 5);
+        boxes = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5);
         return boxes;
     }
 
@@ -531,11 +534,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             cropToFrameTransform.mapRect(boundingBox);
 
             Bitmap faceCrop = Align.cropFaceFromContour(alignCropCopyBitmap, selectedBox);
-            LOGGER.d("Face Cropped!");
 
             if (boundingBox != null && faceCrop != null) {
-                LOGGER.d("Go to Face Extract!");
-
                 float sx = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getWidth();
                 float sy = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getHeight();
                 Matrix matrix = new Matrix();
@@ -557,7 +557,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     LOGGER.d("Go to face verify");
 
                     Result result = faceManager.verify(faceBmp);    // Verify Stage
-                    if (result != null) {
+                    boolean is_spoof = faceAntiSpoofing.antiSpoofing(faceBmp);
+                    if (result != null && is_spoof) {
                         int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
                         int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
                         LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
@@ -615,7 +616,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 if (faceVector != null && isAddingFaceFlow) {
                     long elapseRealTime = SystemClock.elapsedRealtime();
                     if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
-                        if (FaceUtils.isValidFace(selectedBox)) {
+                        if (faceAntiSpoofing.antiSpoofing(faceCrop)) {
                             lastAddFaceTime = elapseRealTime;
                             isTakenPicture = false;
                             currentAddingFaceStep++;
