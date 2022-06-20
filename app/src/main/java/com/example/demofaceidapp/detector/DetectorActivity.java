@@ -95,6 +95,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
     private Bitmap cropCopyBitmap = null;
+    private Bitmap alignCropCopyBitmap = null;
     private boolean computingDetection = false;
     private boolean isAddingFaceFlow = false;
     private String[] DISPLAY_ADDING_FACE_STEP_NAME;
@@ -251,15 +252,21 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             updateResults(currTimestamp, new LinkedList<>());
         }
         else {
-            runInBackground(
-                    () -> {
-                        try {
-                            onFacesDetected(currTimestamp, boxes, isAddingFaceFlow);
-                        } catch (Exception e) {
-                            LOGGER.e("An error occurs %s", e.getMessage());
+            Vector<Box> alignedBoxes = onBoxesAligned(boxes);
+            if(alignedBoxes.size() == 0){
+                updateResults(currTimestamp, new LinkedList<>());
+            }
+            else{
+                runInBackground(
+                        () -> {
+                            try {
+                                onFacesDetected(currTimestamp, alignedBoxes, isAddingFaceFlow);
+                            } catch (Exception e) {
+                                LOGGER.e("An error occurs %s", e.getMessage());
+                            }
                         }
-                    }
-            );
+                );
+            }
         }
     }
 
@@ -450,11 +457,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         if (croppedBitmap == null) return boxes;
         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
 
-        boxes = mtcnn.detectFaces(croppedBitmap, croppedBitmap.getWidth() / 5); // 只有这句代码检测人脸，下面都是根据Box在图片中裁减出人脸
+        boxes = mtcnn.detectFaces(croppedBitmap, croppedBitmap.getWidth() / 5);
+        return boxes;
+    }
 
-        if (boxes.size() == 0)
-            return boxes;
-
+    private Vector<Box> onBoxesAligned(Vector<Box> boxes){
         Box selectedBox = null;
         int selectedBoxSize = -1;
         for (Box box: boxes) {
@@ -465,12 +472,10 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 selectedBoxSize = boxSize;
             }
         }
-        LOGGER.d("Boxes Detected!");
 
         // Face alignment, detect bounding box 1 one time
-        cropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);
-        Vector<Box> boxes1 = mtcnn.detectFaces(cropCopyBitmap, cropCopyBitmap.getWidth() / 5);
-        LOGGER.d("Boxes Aligned!");
+        alignCropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);
+        Vector<Box> boxes1 = mtcnn.detectFaces(alignCropCopyBitmap, alignCropCopyBitmap.getWidth() / 5);
 
         return boxes1;
     }
@@ -515,18 +520,17 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 selectedBoxSize = boxSize;
             }
         }
-        LOGGER.d("Selected Box!");
 
         if (selectedBox != null) {
             selectedBox.toSquareShape();
-            selectedBox.limitSquare(cropCopyBitmap.getWidth(), cropCopyBitmap.getHeight());
+            selectedBox.limitSquare(alignCropCopyBitmap.getWidth(), alignCropCopyBitmap.getHeight());
             Rect rect1 = selectedBox.transform2Rect();
             final RectF boundingBox = new RectF(rect1); // Rect Int -> Rect Float
 
             // maps crop coordinates to original
             cropToFrameTransform.mapRect(boundingBox);
 
-            Bitmap faceCrop = Align.cropFaceFromContour(cropCopyBitmap, selectedBox);
+            Bitmap faceCrop = Align.cropFaceFromContour(alignCropCopyBitmap, selectedBox);
             LOGGER.d("Face Cropped!");
 
             if (boundingBox != null && faceCrop != null) {
@@ -554,17 +558,20 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                     Result result = faceManager.verify(faceBmp);    // Verify Stage
                     if (result != null) {
-                        int eye_w = Math.round(faceCrop.getWidth() / 10) * 2; // Eye
-                        int eye_h = Math.round(faceCrop.getHeight() / 10) * 2;
+                        int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
+                        int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
                         LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
 
-                        Bitmap eye_img1 = FaceUtils.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
-                        Bitmap eye_img2 = FaceUtils.cropEyeFromOri(cropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
+                        Bitmap eye_img1 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
+                        Bitmap eye_img2 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
 
                         Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
                         Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
 
-                        classify(resize_eye_img1, resize_eye_img2);
+                        Bitmap grayscale1 = FaceUtils.rgbToGrayscale(resize_eye_img1);
+                        Bitmap grayscale2 = FaceUtils.rgbToGrayscale(resize_eye_img2);
+
+                        classify(grayscale1, grayscale2);
 
 
                         LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
@@ -579,8 +586,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         color = Color.RED;
                         label = "Không hợp lệ: (Người lạ)";
                     }
-
-                    LOGGER.d("Face Recognized!");
                 }
 
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;

@@ -39,7 +39,6 @@ public class Align {
         RectF rect = new RectF(face.transform2Rect());
         Matrix matrix = new Matrix();
         matrix.postTranslate(-rect.centerX(), -rect.centerY());
-//        matrix.postRotate(face.getHeadEulerAngleZ());
         matrix.mapRect(rect);
         matrix.postTranslate(-rect.left, -rect.top);
 

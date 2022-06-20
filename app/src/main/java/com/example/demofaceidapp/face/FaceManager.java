@@ -19,7 +19,7 @@ import java.util.List;
 public class FaceManager {
 
     public static final int MODEL_INPUT_SIZE = 224;
-    public static final int CONFIDENCE_THRESHOLD = 400;
+    public static final int CONFIDENCE_THRESHOLD = 250; // Range from 240 -> 260
     private MLHandler mlHandler;
     private List<FaceData> faceBank;
 
@@ -29,22 +29,7 @@ public class FaceManager {
                 .add(new DequantizeOp(0, 1 / 255.0F))
                 .build();
         mlHandler = new MLHandler(context.getAssets(), "rec_model.tflite", imageProcessor);
-
-//            Bitmap bitmap1 = Utils.resizeKeepRation(Utils.loadImage(Environment.getExternalStorageDirectory().getAbsolutePath() + "/image1.jpg"), 224, 224);
-//            Bitmap bitmap2 = Utils.resizeKeepRation(Utils.loadImage(Environment.getExternalStorageDirectory().getAbsolutePath() + "/image2.jpg"), 224, 224);
-//            Bitmap bitmap3 = Utils.resizeKeepRation(Utils.loadImage(Environment.getExternalStorageDirectory().getAbsolutePath() + "/image3.jpg"), 224, 224);
-//
-//
-//            float[] feature1 = model.extractFeature(bitmap1);
-//            float[] feature2 = model.extractFeature(bitmap2);
-//            float[] feature3 = model.extractFeature(bitmap3);
-//
-//            Toast.makeText(getApplicationContext(),
-//                    Math.round(1000*MyMaths.cosineSimilarity(feature1, feature2)) + " "
-//                            + Math.round(1000*MyMaths.cosineSimilarity(feature1, feature3)),
-//                    Toast.LENGTH_SHORT).show();
         faceBank = application.getFaceData();
-
     }
 
     public float[] extract(Bitmap face) {
