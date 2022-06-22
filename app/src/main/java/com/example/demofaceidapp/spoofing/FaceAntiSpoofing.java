@@ -26,11 +26,9 @@ public class FaceAntiSpoofing {
     private MLHandler mlHandler;
 
     private static final String MODEL_FILE = "spoofing_model.tflite";
-    public static final float THRESHOLD = 0.5f; // 设置一个阙值，大于这个值认为是攻击
-    public static final int LAPLACE_THRESHOLD = 50; // 拉普拉斯采样阙值
-    public static final int LAPLACIAN_THRESHOLD = 1000; // 图片清晰度判断阙值
-
-
+    public static final float THRESHOLD = 0.5f; // Set a threshold, greater than this value is considered an attack
+    public static final int LAPLACE_THRESHOLD = 50; // Laplace sampling threshold
+    public static final int LAPLACIAN_THRESHOLD = 1000; // Image clarity threshold
 
     public FaceAntiSpoofing(Context context) {
         ImageProcessor imageProcessor = new ImageProcessor.Builder()
@@ -41,9 +39,9 @@ public class FaceAntiSpoofing {
     }
 
     /**
-     * 活体检测
+     * Liveness detection
      * @param faceCrop
-     * @return 评分
+     * @return bool
      */
     public boolean antiSpoofing(Bitmap faceCrop) {
         int laplacianScore = laplacian(faceCrop);
@@ -59,9 +57,9 @@ public class FaceAntiSpoofing {
 
 
     /**
-     * 拉普拉斯算法计算清晰度
+     * Laplacian algorithm to calculate sharpness
      * @param faceCrop
-     * @return 分数
+     * @return score
      */
     private int laplacian(Bitmap faceCrop) {
         int[][] laplace = {{0, 1, 0}, {1, -4, 1}, {0, 1, 0}};

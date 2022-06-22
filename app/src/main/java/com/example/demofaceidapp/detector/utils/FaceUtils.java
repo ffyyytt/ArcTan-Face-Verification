@@ -113,10 +113,6 @@ public class FaceUtils {
         }
     }
 
-    public static boolean isValidFace(Box box) {
-        return true;
-    }
-
     public static Bitmap cropEyeFromOri(Bitmap bitmap, Point eye, int eye_w, int eye_h) {
         return Bitmap.createBitmap(bitmap, eye.x - (eye_w / 2), eye.y - (eye_h / 2), eye_w, eye_h);
     }

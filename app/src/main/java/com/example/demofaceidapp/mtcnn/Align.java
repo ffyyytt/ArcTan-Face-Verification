@@ -9,15 +9,15 @@ import android.graphics.RectF;
 
 
 /**
- * 人脸对齐矫正
+ * Face Alignment
  */
 public class Align {
 
     /**
-     * 仿射变换
-     * @param bitmap 原图片
+     * Normalize Face Image
+     * @param bitmap face
      * @param landmarks landmarks
-     * @return 变换后的图片
+     * @return normalizedFace
      */
     public static Bitmap face_align(Bitmap bitmap, Point[] landmarks) {
         float diffEyeX = landmarks[1].x - landmarks[0].x;

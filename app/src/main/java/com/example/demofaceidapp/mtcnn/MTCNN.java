@@ -17,7 +17,6 @@ import java.util.Vector;
  * MTCNN for Android.
  */
 public class MTCNN {
-    // 参数
     private float factor = 0.709f;
     private float pNetThreshold = 0.6f;
     private float rNetThreshold = 0.7f;
@@ -40,9 +39,9 @@ public class MTCNN {
     }
 
     /**
-     * 人脸检测
-     * @param bitmap 要处理的图片
-     * @param minFaceSize 最小的人脸像素值. (此值越大，检测越快)
+     * Detect Face
+     * @param bitmap
+     * @param minFaceSize
      */
     public Vector<Box> detectFaces(Bitmap bitmap, int minFaceSize) {
         Vector<Box> boxes;
@@ -73,29 +72,28 @@ public class MTCNN {
     }
 
     /**
-     * NMS执行完后，才执行Regression
+     * NMS Regression
      * (1) For each scale , use NMS with threshold=0.5
      * (2) For all candidates , use NMS with threshold=0.7
      * (3) Calibrate Bounding Box
-     * 注意：CNN输入图片最上面一行，坐标为[0..width,0]。所以Bitmap需要对折后再跑网络;网络输出同理.
      *
      * @param bitmap
      * @return
      */
     private Vector<Box> pNet(Bitmap bitmap, int minSize) {
         int whMin = Math.min(bitmap.getWidth(), bitmap.getHeight());
-        float currentFaceSize = minSize; // currentFaceSize=minSize/(factor^k) k=0,1,2... until excced whMin
+        float currentFaceSize = minSize; // currentFaceSize=minSize/(factor^k) k=0,1,2... until exceed whMin
         Vector<Box> totalBoxes = new Vector<>();
         //【1】Image Paramid and Feed to Pnet
         while (currentFaceSize <= whMin) {
             float scale = 12.0f / currentFaceSize;
 
-            // (1)Image Resize
+            // (1) Image Resize
             Bitmap bm = MyUtil.bitmapResize(bitmap, scale);
             int w = bm.getWidth();
             int h = bm.getHeight();
 
-            // (2)RUN CNN
+            // (2) RUN CNN
             int outW = (int) (Math.ceil(w * 0.5 - 5) + 0.5);
             int outH = (int) (Math.ceil(h * 0.5 - 5) + 0.5);
             float[][][][] prob1 = new float[1][outW][outH][2];
@@ -104,19 +102,19 @@ public class MTCNN {
             prob1 = MyUtil.transposeBatch(prob1);
             conv4_2_BiasAdd = MyUtil.transposeBatch(conv4_2_BiasAdd);
 
-            // (3)数据解析
+            // (3) generate bounding boxes
             Vector<Box> curBoxes = new Vector<>();
             generateBoxes(prob1, conv4_2_BiasAdd, scale, curBoxes);
 
-            // (4)nms 0.5
+            // (4) nms 0.5
             nms(curBoxes, 0.5f, "Union");
 
-            // (5)add to totalBoxes
+            // (5) add to totalBoxes
             for (int i = 0; i < curBoxes.size(); i++)
                 if (!curBoxes.get(i).deleted)
                     totalBoxes.addElement(curBoxes.get(i));
 
-            // Face Size等比递增
+            // Increase current face size
             currentFaceSize /= factor;
         }
 
@@ -130,7 +128,6 @@ public class MTCNN {
     }
 
     /**
-     * pnet前向传播
      *
      * @param bitmap
      * @param prob1
@@ -180,19 +177,19 @@ public class MTCNN {
     }
 
     /**
-     * nms，不符合条件的deleted设置为true
+     * nms: Delete boxes
      *
      * @param boxes
      * @param threshold
      * @param method
      */
     private void nms(Vector<Box> boxes, float threshold, String method) {
-        // NMS.两两比对
+        // NMS.
         // int delete_cnt = 0;
         for (int i = 0; i < boxes.size(); i++) {
             Box box = boxes.get(i);
             if (!box.deleted) {
-                // score<0表示当前矩形框被删除
+                // score<0
                 for (int j = i + 1; j < boxes.size(); j++) {
                     Box box2 = boxes.get(j);
                     if (!box2.deleted) {
@@ -257,7 +254,7 @@ public class MTCNN {
     }
 
     /**
-     * RNET跑神经网络，将score和bias写入boxes
+     * RNET
      * @param rNetIn
      * @param boxes
      */
@@ -271,7 +268,7 @@ public class MTCNN {
         outputs.put(rInterpreter.getOutputIndex("rnet/conv5-2/conv5-2"), conv5_2_conv5_2);
         rInterpreter.runForMultipleInputsOutputs(new Object[]{rNetIn}, outputs);
 
-        // 转换
+        // update
         for (int i = 0; i < num; i++) {
             boxes.get(i).score = prob1[i][1];
             for (int j = 0; j < 4; j++) {
@@ -311,7 +308,7 @@ public class MTCNN {
     }
 
     /**
-     * ONet跑神经网络，将score和bias写入boxes
+     * ONet
      * @param oNetIn
      * @param boxes
      */
@@ -327,7 +324,7 @@ public class MTCNN {
         outputs.put(oInterpreter.getOutputIndex("onet/conv6-3/conv6-3"), conv6_3_conv6_3);
         oInterpreter.runForMultipleInputsOutputs(new Object[]{oNetIn}, outputs);
 
-        // 转换
+        // update
         for (int i = 0; i < num; i++) {
             // prob
             boxes.get(i).score = prob1[i][1];
@@ -345,7 +342,7 @@ public class MTCNN {
     }
 
     /**
-     * 删除做了delete标记的box
+     *
      * @param boxes
      * @return
      */

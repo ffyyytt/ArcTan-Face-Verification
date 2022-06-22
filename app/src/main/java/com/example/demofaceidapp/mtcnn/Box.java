@@ -7,7 +7,7 @@ import android.graphics.RectF;
 import static java.lang.Math.max;
 
 /**
- * 人脸框
+ * Face Frame
  */
 public class Box {
     public int[] box;           // left:box[0],top:box[1],right:box[2],bottom:box[3]
@@ -47,7 +47,6 @@ public class Box {
         return box[3] - box[1];
     }
 
-    // 转为rect
     public Rect transform2Rect() {
         Rect rect = new Rect();
         rect.left = box[0];
@@ -57,7 +56,6 @@ public class Box {
         return rect;
     }
 
-    // 面积
     public int area() {
         return width() * height();
     }
@@ -73,7 +71,7 @@ public class Box {
         for (int i = 0; i < 4; i++) bbr[i] = 0.0f;
     }
 
-    // 当前box转为正方形
+    // Convert the current box to a square
     public void toSquareShape() {
         int w = width();
         int h = height();
@@ -86,7 +84,7 @@ public class Box {
         }
     }
 
-    // 防止边界溢出，并维持square大小
+    // Prevent border overflow and maintain square size
     public void limitSquare(int w, int h) {
         if (box[0] < 0 || box[1] < 0) {
             int len = max(-box[0], -box[1]);
@@ -100,7 +98,7 @@ public class Box {
         }
     }
 
-    // 坐标是否越界
+    // Whether the coordinates are out of bounds
     public boolean transbound(int w, int h) {
         if (box[0] < 0 || box[1] < 0) {
             return true;

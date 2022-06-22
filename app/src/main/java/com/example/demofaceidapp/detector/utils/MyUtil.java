@@ -23,7 +23,7 @@ import com.example.demofaceidapp.mtcnn.Box;
 public class MyUtil {
 
     /**
-     * 从assets中读取图片
+     * Read image from assets
      *
      * @param context
      * @param filename
@@ -44,7 +44,7 @@ public class MyUtil {
     }
 
     /**
-     * 给rect增加margin
+     * Add margin to rect
      *
      * @param bitmap
      * @param rect
@@ -59,7 +59,6 @@ public class MyUtil {
     }
 
     /**
-     * 给rect增加margin
      * 使用长度不变，宽度增加到和长度一样
      *
      * @param bitmap
@@ -74,7 +73,7 @@ public class MyUtil {
     }
 
     /**
-     * 加载模型文件
+     * Load model file
      *
      * @param assetManager
      * @param modelPath
@@ -91,7 +90,7 @@ public class MyUtil {
     }
 
     /**
-     * 归一化图片到[-1, 1]
+     * Normalize image to [-1, 1]
      *
      * @param bitmap
      * @return
@@ -106,7 +105,7 @@ public class MyUtil {
 
         int[] pixels = new int[h * w];
         bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, w, h);
-        for (int i = 0; i < h; i++) { // 注意是先高后宽
+        for (int i = 0; i < h; i++) { // height first, width second
             for (int j = 0; j < w; j++) {
                 final int val = pixels[i * w + j];
                 float r = (((val >> 16) & 0xFF) - imageMean) / imageStd;
@@ -120,7 +119,7 @@ public class MyUtil {
     }
 
     /**
-     * 缩放图片
+     * Resize image
      *
      * @param bitmap
      * @param scale
@@ -136,7 +135,7 @@ public class MyUtil {
     }
 
     /**
-     * 图片矩阵宽高转置
+     * Image matrix width and height transpose
      *
      * @param in
      * @return
@@ -155,7 +154,7 @@ public class MyUtil {
     }
 
     /**
-     * 4维图片batch矩阵宽高转置
+     * 4D image batch matrix width and height transpose
      *
      * @param in
      * @return
@@ -177,7 +176,6 @@ public class MyUtil {
     }
 
     /**
-     * 截取box中指定的矩形框(越界要处理)，并resize到size*size大小，返回数据存放到data中。
      * @param bitmap
      * @param box
      * @param size
@@ -210,9 +208,8 @@ public class MyUtil {
     }
 
     /**
-     * 图片转为灰度图
      * @param bitmap
-     * @return 灰度图数据
+     * @return
      */
     public static int[][] convertGreyImg(Bitmap bitmap) {
         int w = bitmap.getWidth();

@@ -18,11 +18,9 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 public class    Utils {
-    //复制图片，并设置isMutable=true
     public static Bitmap copyBitmap(Bitmap bitmap){
         return bitmap.copy(bitmap.getConfig(),true);
     }
-    //在bitmap中画矩形
     public static void drawRect(Bitmap bitmap,Rect rect,int thick){
         try {
             Canvas canvas = new Canvas(bitmap);
@@ -39,7 +37,6 @@ public class    Utils {
             Log.i("Utils","[*] error"+e);
         }
     }
-    //在图中画点
     public static void drawPoints(Bitmap bitmap, Point[] landmark,int thick){
         for (int i=0;i<landmark.length;i++){
             int x=landmark[i].x;
@@ -52,7 +49,6 @@ public class    Utils {
         drawPoints(bitmap,box.landmark,thick);
     }
     //Flip alone diagonal
-    //对角线翻转。data大小原先为h*w*stride，翻转后变成w*h*stride
     public static void flip_diag(float[]data,int h,int w,int stride){
         float[] tmp=new float[w*h*stride];
         for (int i=0;i<w*h*stride;i++) tmp[i]=data[i];
@@ -62,14 +58,14 @@ public class    Utils {
                     data[(x*h+y)*stride+z]=tmp[(y*w+x)*stride+z];
             }
     }
-    //src转为二维存放到dst中
+    //convert to 2D dst
     public static void expand(float[] src,float[][]dst){
         int idx=0;
         for (int y=0;y<dst.length;y++)
             for (int x=0;x<dst[0].length;x++)
                 dst[y][x]=src[idx++];
     }
-    //src转为三维存放到dst中
+    //convert to 3D dst
     public static void expand(float[] src,float[][][] dst){
         int idx=0;
         for (int y=0;y<dst.length;y++)
@@ -85,7 +81,6 @@ public class    Utils {
             for (int x=0;x<dst[0].length;x++)
                 dst[y][x]=src[idx++*2+1];
     }
-    //box转化为rect
     public static Rect[] boxes2rects(Vector<Box> boxes){
         int cnt=0;
         for (int i=0;i<boxes.size();i++) if (!boxes.get(i).deleted) cnt++;
@@ -96,7 +91,6 @@ public class    Utils {
                 r[idx++]=boxes.get(i).transform2Rect();
         return r;
     }
-    //删除做了delete标记的box
     public static Vector<Box> updateBoxes(Vector<Box> boxes){
         Vector<Box> b=new Vector<Box>();
         for (int i=0;i<boxes.size();i++)
@@ -104,12 +98,10 @@ public class    Utils {
                 b.addElement(boxes.get(i));
         return b;
     }
-    //按照rect的大小裁剪出人脸
     public static Bitmap crop(Bitmap bitmap,Rect rect){
         Bitmap cropped=Bitmap.createBitmap(bitmap,rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);
         return cropped;
     }
-    //rect上下左右各扩展pixels个像素
     public static void rectExtend(Bitmap bitmap,Rect rect,int pixels){
         rect.left=max(0,rect.left-pixels);
         rect.right=min(bitmap.getWidth()-1,rect.right+pixels);
