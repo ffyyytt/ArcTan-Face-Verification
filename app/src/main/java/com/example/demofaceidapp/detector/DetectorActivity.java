@@ -119,7 +119,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private int countFace = 0;
     private boolean isTakenPicture;
     private int userId;
-    private int resizeImageSize = 24;
+    private final int resizeImageSize = 24;
     private MTCNN mtcnn;
     private String result1;
     private String result2;
@@ -478,9 +478,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         // Face alignment, detect bounding box 1 one time
         alignCropCopyBitmap = Align.face_align(cropCopyBitmap, selectedBox.landmark);
-        Vector<Box> boxes1 = mtcnn.detectFaces(alignCropCopyBitmap, alignCropCopyBitmap.getWidth() / 5);
 
-        return boxes1;
+        return mtcnn.detectFaces(alignCropCopyBitmap, alignCropCopyBitmap.getWidth() / 5);
     }
 
     private void onFacesDetected(long currTimestamp, Vector<Box> boxes, boolean add) {
@@ -557,8 +556,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     LOGGER.d("Go to face verify");
 
                     Result result = faceManager.verify(faceBmp);    // Verify Stage
-                    boolean is_spoof = faceAntiSpoofing.antiSpoofing(faceBmp);
-                    if (result != null && is_spoof) {
+
+                    if (result != null &&  faceAntiSpoofing.antiSpoofing(faceBmp)) {
                         int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
                         int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
                         LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
@@ -574,15 +573,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                         classify(grayscale1, grayscale2);
 
-
                         LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
                         label = String.format("%s || %s | %s", getApp().getUser(result.faceData.userId).name, result1, result2);
                         color = Color.GREEN;
-
-
-//                        color = Color.GREEN;
-//                        label = String.format("%s (%f)", getApp().getUser(result.faceData.userId).name, result.similarity);
-
                     } else {
                         color = Color.RED;
                         label = "Không hợp lệ: (Người lạ)";
@@ -614,6 +607,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 result.setValid(tracker.checkFaceDetectedIsInFrame(boundingBox));
                 mappedRecognitions.add(result);
                 if (faceVector != null && isAddingFaceFlow) {
+                    LOGGER.d("Go to add vector!");
                     long elapseRealTime = SystemClock.elapsedRealtime();
                     if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
                         if (faceAntiSpoofing.antiSpoofing(faceCrop)) {

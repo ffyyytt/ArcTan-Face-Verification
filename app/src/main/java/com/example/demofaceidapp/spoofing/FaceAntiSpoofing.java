@@ -23,9 +23,9 @@ import java.util.Map;
 
 public class FaceAntiSpoofing {
     public static final int MODEL_INPUT_SIZE = 224;
-    private MLHandler mlHandler;
+    private final MLHandler mlHandler;
 
-    private static final String MODEL_FILE = "spoofing_model.tflite";
+    private static final String MODEL_FILE = "spoof_model.tflite";
     public static final float THRESHOLD = 0.5f; // Set a threshold, greater than this value is considered an attack
     public static final int LAPLACE_THRESHOLD = 50; // Laplace sampling threshold
     public static final int LAPLACIAN_THRESHOLD = 1000; // Image clarity threshold
@@ -41,7 +41,7 @@ public class FaceAntiSpoofing {
     /**
      * Liveness detection
      * @param faceCrop
-     * @return bool
+     * @return bool (true means real, false means fake)
      */
     public boolean antiSpoofing(Bitmap faceCrop) {
         int laplacianScore = laplacian(faceCrop);
@@ -49,10 +49,7 @@ public class FaceAntiSpoofing {
             return false;
         }
         float[] features = mlHandler.extractSpoofFeature(faceCrop);
-        if (features[0] >= THRESHOLD){
-            return false;
-        }
-        return true;
+        return !(features[0] >= THRESHOLD);
     }
 
 
@@ -72,7 +69,7 @@ public class FaceAntiSpoofing {
         for (int x = 0; x < height - size + 1; x++){
             for (int y = 0; y < width - size + 1; y++){
                 int result = 0;
-                // 对size*size区域进行卷积操作
+                // convolution steps
                 for (int i = 0; i < size; i++){
                     for (int j = 0; j < size; j++){
                         result += (img[x + i][y + j] & 0xFF) * laplace[i][j];
