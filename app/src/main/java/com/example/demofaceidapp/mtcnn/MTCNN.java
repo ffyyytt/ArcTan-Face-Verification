@@ -15,7 +15,9 @@ import java.util.Vector;
 
 /**
  * MTCNN for Android.
+ * Adapted from: https://github.com/vcvycy/MTCNN4Android
  */
+
 public class MTCNN {
     private float factor = 0.709f;
     private float pNetThreshold = 0.6f;

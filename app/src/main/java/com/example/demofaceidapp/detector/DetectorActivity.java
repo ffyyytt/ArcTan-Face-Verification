@@ -249,28 +249,52 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             ImageUtils.saveBitmap(croppedBitmap);
         }
 
-        Vector<Box> boxes = onBoxesDetected();
+        runInBackground(
+                () -> {
+                    try{
+                        Vector<Box> boxes = onBoxesDetected();
 
-        if (boxes.size() == 0){
-            updateResults(currTimestamp, new LinkedList<>());
-        }
-        else {
-            Vector<Box> alignedBoxes = onBoxesAligned(boxes);
-            if(alignedBoxes.size() == 0){
-                updateResults(currTimestamp, new LinkedList<>());
-            }
-            else{
-                runInBackground(
-                        () -> {
-                            try {
+                        if (boxes.size() == 0){
+                            updateResults(currTimestamp, new LinkedList<>());
+                        }
+                        else {
+                            Vector<Box> alignedBoxes = onBoxesAligned(boxes);
+                            if (alignedBoxes.size() == 0)
+                                updateResults(currTimestamp, new LinkedList<>());
+                            else {
                                 onFacesDetected(currTimestamp, alignedBoxes, isAddingFaceFlow);
-                            } catch (Exception e) {
-                                LOGGER.e("An error occurs %s", e.getMessage());
                             }
                         }
-                );
-            }
-        }
+                    }
+                    catch (Exception e) {
+                        LOGGER.e("An error occurs %s", e.getMessage());
+                    }
+
+                }
+        );
+
+//        Vector<Box> boxes = onBoxesDetected();
+//
+//        if (boxes.size() == 0){
+//            updateResults(currTimestamp, new LinkedList<>());
+//        }
+//        else {
+//            Vector<Box> alignedBoxes = onBoxesAligned(boxes);
+//            if(alignedBoxes.size() == 0){
+//                updateResults(currTimestamp, new LinkedList<>());
+//            }
+//            else{
+//                runInBackground(
+//                        () -> {
+//                            try {
+//                                onFacesDetected(currTimestamp, alignedBoxes, isAddingFaceFlow);
+//                            } catch (Exception e) {
+//                                LOGGER.e("An error occurs %s", e.getMessage());
+//                            }
+//                        }
+//                );
+//            }
+//        }
     }
 
 
@@ -432,6 +456,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 maxPos = i;
             }
         }
+        LOGGER.d("Confidence score: ", maxConfidence);
+        LOGGER.d("Target index: ", maxPos);
+
 
         return maxPos;
     }
@@ -549,37 +576,44 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 final long startTime = SystemClock.uptimeMillis();
                 if (isAddingFaceFlow) {
-                    LOGGER.d("Go to face register");
-
                     faceVector = faceManager.extract(faceBmp); // Register Stage
                 } else {
-                    LOGGER.d("Go to face verify");
+                    float score = faceAntiSpoofing.antiSpoofing(faceBmp);
+                    LOGGER.d("Score: %f", score);
 
-                    Result result = faceManager.verify(faceBmp);    // Verify Stage
-
-                    if (result != null &&  faceAntiSpoofing.antiSpoofing(faceBmp)) {
-                        int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
-                        int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
-                        LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
-
-                        Bitmap eye_img1 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
-                        Bitmap eye_img2 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
-
-                        Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
-                        Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
-
-                        Bitmap grayscale1 = FaceUtils.rgbToGrayscale(resize_eye_img1);
-                        Bitmap grayscale2 = FaceUtils.rgbToGrayscale(resize_eye_img2);
-
-                        classify(grayscale1, grayscale2);
-
-                        LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
-                        label = String.format("%s || %s | %s", getApp().getUser(result.faceData.userId).name, result1, result2);
-                        color = Color.GREEN;
-                    } else {
+                    if (score > faceAntiSpoofing.THRESHOLD){
                         color = Color.RED;
-                        label = "Không hợp lệ: (Người lạ)";
+                        label = "Khuôn mặt không hợp lệ!";
                     }
+
+                    else{
+                        Result result = faceManager.verify(faceBmp);    // Verify Stage
+
+                        if (result != null ) {
+                            int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
+                            int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
+                            LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
+
+                            Bitmap eye_img1 = FaceUtils.cropEyeFromOri(faceCrop, selectedBox.landmark[0], eye_w, eye_h);
+                            Bitmap eye_img2 = FaceUtils.cropEyeFromOri(faceCrop, selectedBox.landmark[1], eye_w, eye_h);
+
+                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
+                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
+
+                            Bitmap grayscale1 = FaceUtils.rgbToGrayscale(resize_eye_img1);
+                            Bitmap grayscale2 = FaceUtils.rgbToGrayscale(resize_eye_img2);
+
+                            classify(grayscale1, grayscale2);
+
+                            LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
+                            label = String.format("%s", getApp().getUser(result.faceData.userId).name);
+                            color = Color.GREEN;
+                        } else {
+                            color = Color.RED;
+                            label = "Người lạ";
+                        }
+                    }
+
                 }
 
                 lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
@@ -607,10 +641,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 result.setValid(tracker.checkFaceDetectedIsInFrame(boundingBox));
                 mappedRecognitions.add(result);
                 if (faceVector != null && isAddingFaceFlow) {
-                    LOGGER.d("Go to add vector!");
                     long elapseRealTime = SystemClock.elapsedRealtime();
                     if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
-                        if (faceAntiSpoofing.antiSpoofing(faceCrop)) {
+                        int score = faceAntiSpoofing.laplacian(faceCrop);
+                        LOGGER.d("Laplacian score: %d", score);
+                        if (score >= faceAntiSpoofing.LAPLACIAN_THRESHOLD) {
                             lastAddFaceTime = elapseRealTime;
                             isTakenPicture = false;
                             currentAddingFaceStep++;

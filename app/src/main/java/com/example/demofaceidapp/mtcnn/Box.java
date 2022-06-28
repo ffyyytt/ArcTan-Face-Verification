@@ -2,7 +2,6 @@ package com.example.demofaceidapp.mtcnn;
 
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.RectF;
 
 import static java.lang.Math.max;
 
@@ -14,7 +13,7 @@ public class Box {
     public float score;         // probability
     public float[] bbr;         // bounding box regression
     public boolean deleted;
-    public Point[] landmark;    // facial landmark.只有ONet输出Landmark
+    public Point[] landmark;    // facial landmark. Output from O-Net
 
     public Box() {
         box = new int[4];

@@ -40,7 +40,7 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.ViewHo
             holder.binding.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.red));
         } else {
             holder.binding.tvStatus.setText("Face data: Available");
-            holder.binding.btnAdd.setVisibility(View.GONE);
+//            holder.binding.btnAdd.setVisibility(View.GONE);
             holder.binding.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.green));
         }
     }

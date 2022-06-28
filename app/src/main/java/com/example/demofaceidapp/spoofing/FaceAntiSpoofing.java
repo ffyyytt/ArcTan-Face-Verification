@@ -21,6 +21,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Face Anti-Spoofing for Android.
+ */
+
+
 public class FaceAntiSpoofing {
     public static final int MODEL_INPUT_SIZE = 224;
     private final MLHandler mlHandler;
@@ -28,7 +33,7 @@ public class FaceAntiSpoofing {
     private static final String MODEL_FILE = "spoof_model.tflite";
     public static final float THRESHOLD = 0.5f; // Set a threshold, greater than this value is considered an attack
     public static final int LAPLACE_THRESHOLD = 50; // Laplace sampling threshold
-    public static final int LAPLACIAN_THRESHOLD = 1000; // Image clarity threshold
+    public static final int LAPLACIAN_THRESHOLD = 500; // Image clarity threshold
 
     public FaceAntiSpoofing(Context context) {
         ImageProcessor imageProcessor = new ImageProcessor.Builder()
@@ -43,22 +48,23 @@ public class FaceAntiSpoofing {
      * @param faceCrop
      * @return bool (true means real, false means fake)
      */
-    public boolean antiSpoofing(Bitmap faceCrop) {
-        int laplacianScore = laplacian(faceCrop);
-        if (laplacianScore < LAPLACIAN_THRESHOLD){
-            return false;
-        }
+    public float antiSpoofing(Bitmap faceCrop) {
+//        int laplacianScore = laplacian(faceCrop);
+//        if (laplacianScore < LAPLACIAN_THRESHOLD){
+//            return false;
+//        }
         float[] features = mlHandler.extractSpoofFeature(faceCrop);
-        return !(features[0] >= THRESHOLD);
+//        return features[0] < THRESHOLD;
+        return features[0];
     }
 
 
     /**
-     * Laplacian algorithm to calculate sharpness
+     * Laplacian algorithm to calculate sharpness.
      * @param faceCrop
      * @return score
      */
-    private int laplacian(Bitmap faceCrop) {
+    public int laplacian(Bitmap faceCrop) {
         int[][] laplace = {{0, 1, 0}, {1, -4, 1}, {0, 1, 0}};
         int size = laplace.length;
         int[][] img = MyUtil.convertGreyImg(faceCrop);
@@ -81,9 +87,5 @@ public class FaceAntiSpoofing {
             }
         }
         return score;
-    }
-
-    public static boolean isValidFace(Box face) {
-        return true;
     }
 }

@@ -59,7 +59,6 @@ public class MyUtil {
     }
 
     /**
-     * 使用长度不变，宽度增加到和长度一样
      *
      * @param bitmap
      * @param rect
