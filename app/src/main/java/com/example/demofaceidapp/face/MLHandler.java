@@ -70,6 +70,18 @@ public class MLHandler {
         return extractSpoofFeature(tensorImage);
     }
 
+    public float[] extractEyeFeature(TensorImage tensorImage) {
+        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 2}, DataType.FLOAT32);
+        model.run(imageProcessor.process(tensorImage).getBuffer(), feature.getBuffer());
+        return feature.getFloatArray();
+    }
+
+    public float[] extractEyeFeature(Bitmap bitmap) {
+        TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
+        tensorImage.load(bitmap);
+        return extractEyeFeature(tensorImage);
+    }
+
     public static InterpreterApi loadModel(File file) throws IOException {
         //Interpreter model = new Interpreter(file);
 

@@ -39,6 +39,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.example.demofaceidapp.R;
+import com.example.demofaceidapp.classification.EyeClassifier;
 import com.example.demofaceidapp.data.Result;
 import com.example.demofaceidapp.detector.customview.OverlayView;
 import com.example.demofaceidapp.detector.env.BorderedText;
@@ -49,20 +50,16 @@ import com.example.demofaceidapp.detector.tracking.MultiBoxTracker;
 import com.example.demofaceidapp.detector.utils.Constant;
 import com.example.demofaceidapp.detector.utils.FaceUtils;
 import com.example.demofaceidapp.face.FaceManager;
-import com.example.demofaceidapp.ml.EyeClsModel;
 import com.example.demofaceidapp.mtcnn.Align;
 import com.example.demofaceidapp.mtcnn.Box;
 import com.example.demofaceidapp.mtcnn.MTCNN;
 import com.example.demofaceidapp.spoofing.FaceAntiSpoofing;
 
-import org.tensorflow.lite.DataType;
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,6 +90,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private Integer sensorOrientation;
     private FaceManager faceManager;
     private FaceAntiSpoofing faceAntiSpoofing;
+    private EyeClassifier eyeClassifier;
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
@@ -119,10 +117,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private int countFace = 0;
     private boolean isTakenPicture;
     private int userId;
-    private final int resizeImageSize = 24;
     private MTCNN mtcnn;
-    private String result1;
-    private String result2;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -158,6 +154,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         faceManager = new FaceManager(this, getApp());
         faceAntiSpoofing = new FaceAntiSpoofing(this);
+        eyeClassifier = new EyeClassifier(this);
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
 
@@ -272,29 +269,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 }
         );
-
-//        Vector<Box> boxes = onBoxesDetected();
-//
-//        if (boxes.size() == 0){
-//            updateResults(currTimestamp, new LinkedList<>());
-//        }
-//        else {
-//            Vector<Box> alignedBoxes = onBoxesAligned(boxes);
-//            if(alignedBoxes.size() == 0){
-//                updateResults(currTimestamp, new LinkedList<>());
-//            }
-//            else{
-//                runInBackground(
-//                        () -> {
-//                            try {
-//                                onFacesDetected(currTimestamp, alignedBoxes, isAddingFaceFlow);
-//                            } catch (Exception e) {
-//                                LOGGER.e("An error occurs %s", e.getMessage());
-//                            }
-//                        }
-//                );
-//            }
-//        }
     }
 
 
@@ -418,69 +392,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 });
     }
 
-    private int classifyEyeImage(EyeClsModel model, Bitmap image){
-        // Creates inputs for reference.
-        TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 24, 24, 3}, DataType.FLOAT32);
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * resizeImageSize * resizeImageSize * 3);
-        byteBuffer.order(ByteOrder.nativeOrder());
-
-        int[] intValues = new int[resizeImageSize * resizeImageSize];
-        image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
-
-        int pixel = 0;
-
-        // Iterate over each pixel and extract R, G, and B values. Add those values individually to the byte buffer.
-        for(int i = 0; i < resizeImageSize; i ++){
-            for(int j = 0; j < resizeImageSize; j++){
-                int val = intValues[pixel++]; // RGB
-                byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 255));
-                byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 255));
-                byteBuffer.putFloat((val & 0xFF) * (1.f / 255));
-            }
-        }
-
-        inputFeature0.loadBuffer(byteBuffer);
-
-        // Runs model inference and gets result.
-        EyeClsModel.Outputs outputs = model.process(inputFeature0);
-        TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-
-        float[] confidences = outputFeature0.getFloatArray();
-
-        // Find the index of the class with the highest confidence.
-        int maxPos = 0;
-        float maxConfidence = 0;
-        for (int i = 0; i < confidences.length; i++) {
-            if (confidences[i] > maxConfidence) {
-                maxConfidence = confidences[i];
-                maxPos = i;
-            }
-        }
-        LOGGER.d("Confidence score: ", maxConfidence);
-        LOGGER.d("Target index: ", maxPos);
-
-
-        return maxPos;
-    }
-
-    private void classify(Bitmap image1, Bitmap image2){
-        try {
-            EyeClsModel model = EyeClsModel.newInstance(getApplicationContext());
-            int maxPosImage1 = classifyEyeImage(model, image1);
-            int maxPosImage2 = classifyEyeImage(model, image2);
-
-            String[] classes = {"Open", "Close"};
-            result1 = classes[maxPosImage1];
-            result2 = classes[maxPosImage2];
-
-            // Releases model resources if no longer used.
-            model.close();
-
-        } catch (IOException e) {
-            // TODO Handle the exception
-            LOGGER.e(e, "Failed to classify.");
-        }
-    }
 
     private Vector<Box> onBoxesDetected(){
         Vector<Box> boxes = new Vector<>();
@@ -590,27 +501,30 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         Result result = faceManager.verify(faceBmp);    // Verify Stage
 
                         if (result != null ) {
-                            int eye_w = Math.round(faceCrop.getWidth() / 8) * 2; // Eye
-                            int eye_h = Math.round(faceCrop.getHeight() / 8) * 2;
-                            LOGGER.d("Eye width ori: %d || Eye height ori: %d", eye_w, eye_h);
+                            int eye_w = Math.round(faceCrop.getWidth() / 12) * 2; // Eye width
+                            int eye_h = Math.round(faceCrop.getHeight() / 12) * 2; // Eye height
 
-                            Bitmap eye_img1 = FaceUtils.cropEyeFromOri(faceCrop, selectedBox.landmark[0], eye_w, eye_h);
-                            Bitmap eye_img2 = FaceUtils.cropEyeFromOri(faceCrop, selectedBox.landmark[1], eye_w, eye_h);
+                            Bitmap eye_img1 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
+                            Bitmap eye_img2 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
 
-                            Bitmap resize_eye_img1 = Bitmap.createScaledBitmap(eye_img1, resizeImageSize, resizeImageSize, true);
-                            Bitmap resize_eye_img2 = Bitmap.createScaledBitmap(eye_img2, resizeImageSize, resizeImageSize, true);
+                            Bitmap grayscale1 = FaceUtils.rgbToGrayscale(eye_img1);
+                            Bitmap grayscale2 = FaceUtils.rgbToGrayscale(eye_img2);
 
-                            Bitmap grayscale1 = FaceUtils.rgbToGrayscale(resize_eye_img1);
-                            Bitmap grayscale2 = FaceUtils.rgbToGrayscale(resize_eye_img2);
+                            String result1 = eyeClassifier.classify(grayscale1);
+                            String result2 = eyeClassifier.classify(grayscale2);
 
-                            classify(grayscale1, grayscale2);
+                            if (result1.equals("Close") && result2.equals("Close")){
+                                label = "Hai mắt đang đóng!";
+                                color = Color.RED;
+                            }
+                            else{
+                                label = String.format("%s", getApp().getUser(result.faceData.userId).name);
+                                color = Color.GREEN;
+                            }
 
-                            LOGGER.d("Classify || Image 1: %s | Image 2: %s", result1, result2);
-                            label = String.format("%s", getApp().getUser(result.faceData.userId).name);
-                            color = Color.GREEN;
                         } else {
                             color = Color.RED;
-                            label = "Người lạ";
+                            label = "Người lạ!";
                         }
                     }
 
