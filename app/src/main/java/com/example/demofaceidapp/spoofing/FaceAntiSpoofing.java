@@ -31,7 +31,7 @@ public class FaceAntiSpoofing {
     private final MLHandler mlHandler;
 
     private static final String MODEL_FILE = "spoof_model.tflite";
-    public static final float THRESHOLD = 0.15f; // Set a threshold, greater than this value is considered an attack
+    public static final float THRESHOLD = 0.7f; // Set a threshold, greater than this value is considered an attack
     public static final int LAPLACE_THRESHOLD = 50; // Laplace sampling threshold
     public static final int LAPLACIAN_THRESHOLD = 700; // Image clarity threshold
 
