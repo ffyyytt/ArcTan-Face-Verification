@@ -39,7 +39,7 @@ public class EyeClassifier {
                 maxPos = i;
             }
         }
-        String[] classes = {"Close", "Open"};
+        String[] classes = {"Open", "Close"};
         return classes[maxPos];
     }
 }
