@@ -19,7 +19,7 @@ import java.util.List;
 public class FaceManager {
 
     public static final int MODEL_INPUT_SIZE = 224;
-    public static final int CONFIDENCE_THRESHOLD = 710; // Range from 240 -> 260
+    public static final int CONFIDENCE_THRESHOLD = 710;
     private MLHandler mlHandler;
     private List<FaceData> faceBank;
 
