@@ -507,12 +507,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     faceVector = faceManager.extract(faceBmp); // Register Stage
                 } else {
                     float score = faceAntiSpoofing.antiSpoofing(faceCrop);
-                    // Thay tham số ở hàm trên để test model anti-spoofing
-                    // detectedFaceCrop = ảnh crop + không xoay
-                    // faceCrop = ảnh crop + xoay
-                    // alignCropCopyBitmap = ảnh full + xoay
-                    // cropCopyBitmap = ảnh full + không xoay
-
                     LOGGER.d("Score: %f", score);
 
                     if (score > faceAntiSpoofing.THRESHOLD){
