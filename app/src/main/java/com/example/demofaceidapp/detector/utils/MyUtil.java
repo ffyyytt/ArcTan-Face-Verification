@@ -17,10 +17,13 @@ import java.io.InputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import com.example.demofaceidapp.mtcnn.Box;
+
+
 public class MyUtil {
 
     /**
-     * 从assets中读取图片
+     * Read image from assets
      *
      * @param context
      * @param filename
@@ -41,7 +44,7 @@ public class MyUtil {
     }
 
     /**
-     * 给rect增加margin
+     * Add margin to rect
      *
      * @param bitmap
      * @param rect
@@ -56,8 +59,6 @@ public class MyUtil {
     }
 
     /**
-     * 给rect增加margin
-     * 使用长度不变，宽度增加到和长度一样
      *
      * @param bitmap
      * @param rect
@@ -71,7 +72,7 @@ public class MyUtil {
     }
 
     /**
-     * 加载模型文件
+     * Load model file
      *
      * @param assetManager
      * @param modelPath
@@ -88,7 +89,7 @@ public class MyUtil {
     }
 
     /**
-     * 归一化图片到[-1, 1]
+     * Normalize image to [-1, 1]
      *
      * @param bitmap
      * @return
@@ -103,7 +104,7 @@ public class MyUtil {
 
         int[] pixels = new int[h * w];
         bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, w, h);
-        for (int i = 0; i < h; i++) { // 注意是先高后宽
+        for (int i = 0; i < h; i++) { // height first, width second
             for (int j = 0; j < w; j++) {
                 final int val = pixels[i * w + j];
                 float r = (((val >> 16) & 0xFF) - imageMean) / imageStd;
@@ -117,7 +118,7 @@ public class MyUtil {
     }
 
     /**
-     * 缩放图片
+     * Resize image
      *
      * @param bitmap
      * @param scale
@@ -133,7 +134,7 @@ public class MyUtil {
     }
 
     /**
-     * 图片矩阵宽高转置
+     * Image matrix width and height transpose
      *
      * @param in
      * @return
@@ -152,7 +153,7 @@ public class MyUtil {
     }
 
     /**
-     * 4维图片batch矩阵宽高转置
+     * 4D image batch matrix width and height transpose
      *
      * @param in
      * @return
@@ -173,6 +174,25 @@ public class MyUtil {
         return out;
     }
 
+    /**
+     * @param bitmap
+     * @param box
+     * @param size
+     * return
+     */
+    public static float[][][] cropAndResize(Bitmap bitmap, Box box, int size) {
+        // crop and resize
+        Matrix matrix = new Matrix();
+        float scaleW = 1.0f * size / box.width();
+        float scaleH = 1.0f * size / box.height();
+        matrix.postScale(scaleW, scaleH);
+        Rect rect = box.transform2Rect();
+        Bitmap croped = Bitmap.createBitmap(
+                bitmap, rect.left, rect.top, box.width(), box.height(), matrix, true);
+
+        return normalizeImage(croped);
+    }
+
     public static void l2Normalize(float[][] embeddings, double epsilon) {
         for (int i = 0; i < embeddings.length; i++) {
             float squareSum = 0;
@@ -184,6 +204,35 @@ public class MyUtil {
                 embeddings[i][j] = embeddings[i][j] / xInvNorm;
             }
         }
+    }
+
+    /**
+     * @param bitmap
+     * @return
+     */
+    public static int[][] convertGreyImg(Bitmap bitmap) {
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+
+        int[] pixels = new int[h * w];
+        bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
+
+        int[][] result = new int[h][w];
+        int alpha = 0xFF << 24;
+        for(int i = 0; i < h; i++)	{
+            for(int j = 0; j < w; j++) {
+                int val = pixels[w * i + j];
+
+                int red = ((val >> 16) & 0xFF);
+                int green = ((val >> 8) & 0xFF);
+                int blue = (val & 0xFF);
+
+                int grey = (int)((float) red * 0.3 + (float)green * 0.59 + (float)blue * 0.11);
+                grey = alpha | (grey << 16) | (grey << 8) | grey;
+                result[i][j] = grey;
+            }
+        }
+        return result;
     }
 
     public static float distanceToSimilarity(float dist) {

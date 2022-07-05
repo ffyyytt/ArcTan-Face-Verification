@@ -1,6 +1,7 @@
 package com.example.demofaceidapp.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -32,12 +33,14 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.ViewHo
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User user = data.get(position);
+
         holder.binding.tvName.setText(user.name);
         if (user.faces == null || user.faces.isEmpty()) {
             holder.binding.tvStatus.setText("Face data: Not ready");
             holder.binding.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.red));
         } else {
             holder.binding.tvStatus.setText("Face data: Available");
+//            holder.binding.btnAdd.setVisibility(View.GONE);
             holder.binding.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.green));
         }
     }
@@ -61,11 +64,6 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.ViewHo
                 }
             });
 
-            this.binding.btnAddManual.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onAddManual(data.get(getAdapterPosition()).id);
-                }
-            });
 
             this.binding.btnDelete.setOnClickListener(v -> {
                 if (listener != null) {
@@ -80,7 +78,6 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.ViewHo
 
     public interface Listener {
         void onAdd(int userId);
-        void onAddManual(int userId);
         void onDelete(int userId);
     }
 

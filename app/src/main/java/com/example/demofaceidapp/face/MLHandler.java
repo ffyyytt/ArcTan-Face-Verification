@@ -30,7 +30,7 @@ public class MLHandler {
         }
     }
 
-    MLHandler(AssetManager assetManager, String modeAssetName, ImageProcessor _imageProcessor) {
+    public MLHandler(AssetManager assetManager, String modeAssetName, ImageProcessor _imageProcessor) {
         try {
             model = loadModelFromAsset(assetManager, modeAssetName);
             imageProcessor = _imageProcessor;
@@ -47,7 +47,7 @@ public class MLHandler {
     }
 
     public float[] extractFeature(TensorImage tensorImage) {
-        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 512}, DataType.FLOAT32);
+        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 1024}, DataType.FLOAT32);
         model.run(imageProcessor.process(tensorImage).getBuffer(), feature.getBuffer());
         return feature.getFloatArray();
     }
@@ -56,6 +56,30 @@ public class MLHandler {
         TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
         tensorImage.load(bitmap);
         return extractFeature(tensorImage);
+    }
+
+    public float[] extractSpoofFeature(TensorImage tensorImage) {
+        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 1}, DataType.FLOAT32);
+        model.run(imageProcessor.process(tensorImage).getBuffer(), feature.getBuffer());
+        return feature.getFloatArray();
+    }
+
+    public float[] extractSpoofFeature(Bitmap bitmap) {
+        TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
+        tensorImage.load(bitmap);
+        return extractSpoofFeature(tensorImage);
+    }
+
+    public float[] extractEyeFeature(TensorImage tensorImage) {
+        TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 2}, DataType.FLOAT32);
+        model.run(imageProcessor.process(tensorImage).getBuffer(), feature.getBuffer());
+        return feature.getFloatArray();
+    }
+
+    public float[] extractEyeFeature(Bitmap bitmap) {
+        TensorImage tensorImage = new TensorImage(DataType.FLOAT32);
+        tensorImage.load(bitmap);
+        return extractEyeFeature(tensorImage);
     }
 
     public static InterpreterApi loadModel(File file) throws IOException {

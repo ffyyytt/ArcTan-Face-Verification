@@ -66,6 +66,7 @@ import java.util.Locale;
 import com.example.demofaceidapp.detector.env.ImageUtils;
 import com.example.demofaceidapp.detector.env.Logger;
 
+
 public abstract class CameraActivity extends BaseActivity
         implements OnImageAvailableListener,
         Camera.PreviewCallback,
@@ -102,6 +103,7 @@ public abstract class CameraActivity extends BaseActivity
     private Integer useFacing = null;
     private String cameraId = null;
     private ImageView ivBack;
+    private int numThreads = -1;
 
     private static boolean allPermissionsGranted(final int[] grantResults) {
         for (int result : grantResults) {
@@ -231,7 +233,6 @@ public abstract class CameraActivity extends BaseActivity
             if (isAddingFaceFlow()) {
                 layoutAdd.setVisibility(View.VISIBLE);
                 tvProgress.setText(String.format(Locale.US, "%d/%d", getCurrentAddingFaceStep(), getTotalAddingFaceStep()));
-                tvStep.setText(getDisplayCurrentAddingFaceStep());
                 prgBar.setMax(getTotalAddingFaceStep());
                 prgBar.setProgress(getCurrentAddingFaceStep());
 
@@ -471,13 +472,13 @@ public abstract class CameraActivity extends BaseActivity
         LOGGER.d("onPause " + this);
 
         handlerThread.quitSafely();
-        try {
-            handlerThread.join();
-            handlerThread = null;
-            handler = null;
-        } catch (final InterruptedException e) {
-            LOGGER.e(e, "Exception!");
-        }
+//        try {
+//            handlerThread.join();
+//            handlerThread = null;
+//            handler = null;
+//        } catch (final InterruptedException e) {
+//            LOGGER.e(e, "Exception!");
+//        }
 
         super.onPause();
     }
@@ -698,6 +699,12 @@ public abstract class CameraActivity extends BaseActivity
                 return 0;
         }
     }
+
+
+    protected int getNumThreads() {
+        return numThreads;
+    }
+
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
