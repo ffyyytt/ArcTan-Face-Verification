@@ -506,7 +506,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 if (isAddingFaceFlow) {
                     faceVector = faceManager.extract(faceBmp); // Register Stage
                 } else {
-                    float score = faceAntiSpoofing.antiSpoofing(faceCrop);
+                    float score = faceAntiSpoofing.antiSpoofing(cropCopyBitmap);
                     LOGGER.d("Score: %f", score);
 
                     if (score > faceAntiSpoofing.THRESHOLD){
