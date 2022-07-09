@@ -50,7 +50,7 @@ public class FaceAntiSpoofing {
      */
     public float antiSpoofing(Bitmap faceCrop) {
         float[] features = mlHandler.extractSpoofFeature(faceCrop);
-        return 1- features[0];
+        return 1 - features[0];
     }
 
 

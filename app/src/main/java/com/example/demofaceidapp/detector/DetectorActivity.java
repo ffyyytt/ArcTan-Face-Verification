@@ -574,7 +574,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 if (faceVector != null && isAddingFaceFlow) {
                     long elapseRealTime = SystemClock.elapsedRealtime();
                     if (isTakenPicture && elapseRealTime - lastAddFaceTime >= MIN_LAST_ADD_FACE_MS) {
-                        int score = faceAntiSpoofing.laplacian(detectedFaceCrop);
+                        int score = faceAntiSpoofing.laplacian(cropCopyBitmap);
                         LOGGER.d("Laplacian score: %d", score);
                         if (score >= faceAntiSpoofing.LAPLACIAN_THRESHOLD) {
                             lastAddFaceTime = elapseRealTime;
