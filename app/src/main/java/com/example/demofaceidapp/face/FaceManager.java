@@ -21,8 +21,8 @@ import java.util.Map;
 public class FaceManager {
 
     public static final int MODEL_INPUT_SIZE = 224;
-    public static final double CONFIDENCE_THRESHOLD1 = 0.72;
-    public static final double CONFIDENCE_THRESHOLD2 = 2.0;
+    public static final double CONFIDENCE_THRESHOLD1 = 0.7;
+    public static final double CONFIDENCE_THRESHOLD2 = 1.71;
     private MLHandler mlHandler;
     private List<FaceData> faceBank;
 
