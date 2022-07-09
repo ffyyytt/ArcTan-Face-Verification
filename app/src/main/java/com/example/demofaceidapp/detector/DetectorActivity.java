@@ -487,7 +487,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
             Bitmap faceCrop = Align.cropFaceFromContour(alignCropCopyBitmap, selectedBox);
 
-            Bitmap detectedFaceCrop = Align.cropFaceFromContour(cropCopyBitmap, detectedBox);
+//            Bitmap detectedFaceCrop = Align.cropFaceFromContour(cropCopyBitmap, detectedBox);
 
             if (boundingBox != null && faceCrop != null) {
                 float sx = ((float) FaceManager.MODEL_INPUT_SIZE) / faceCrop.getWidth();
