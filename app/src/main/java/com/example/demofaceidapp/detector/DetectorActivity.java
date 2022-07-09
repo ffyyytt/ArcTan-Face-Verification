@@ -515,7 +515,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     }
                     else{
                         Result result = faceManager.verify(faceBmp);    // Verify Stage
-                        LOGGER.d("Rec score: %f", result.similarity);
 
                         if (result != null) {
                             int eye_w = Math.round(faceCrop.getWidth() / 10) * 2; // Eye width
@@ -535,6 +534,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                 color = Color.RED;
                             }
                             else{
+                                LOGGER.d("Rec score: %f", result.similarity);
                                 label = String.format("%s", getApp().getUser(result.faceData.userId).name);
                                 color = Color.GREEN;
                             }

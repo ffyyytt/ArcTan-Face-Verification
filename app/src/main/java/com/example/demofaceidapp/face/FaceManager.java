@@ -21,7 +21,7 @@ import java.util.Map;
 public class FaceManager {
 
     public static final int MODEL_INPUT_SIZE = 224;
-    public static final double CONFIDENCE_THRESHOLD1 = 0.7;
+    public static final double CONFIDENCE_THRESHOLD1 = 0.72;
     public static final double CONFIDENCE_THRESHOLD2 = 2.0;
     private MLHandler mlHandler;
     private List<FaceData> faceBank;
@@ -53,7 +53,7 @@ public class FaceManager {
                 results.add(result);
             }
         }
-        Collections.sort(results, (o1, o2) -> Double.compare(Math.abs(o2.similarity), Math.abs(o1.similarity)));
+        Collections.sort(results, (o1, o2) -> Double.compare(o2.similarity, o1.similarity));
         for (int i = 0; i < results.size(); i++) {
             if (Math.abs(results.get(i).similarity) >= CONFIDENCE_THRESHOLD1 && finalResults.size() < countResult) {
                 finalResults.add(results.get(i));
@@ -81,7 +81,7 @@ public class FaceManager {
                 key = results.get(i).faceData.userId;
                 results.get(i).similarity += map.get(key);
             }
-            Collections.sort(results, (o1, o2) -> Double.compare(Math.abs(o2.similarity), Math.abs(o1.similarity)));
+            Collections.sort(results, (o1, o2) -> Double.compare(o2.similarity, o1.similarity));
             if (results.get(0).similarity > CONFIDENCE_THRESHOLD2)
                 return results.get(0);
         }
