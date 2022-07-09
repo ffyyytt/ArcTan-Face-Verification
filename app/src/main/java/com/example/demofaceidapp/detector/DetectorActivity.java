@@ -507,17 +507,17 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     faceVector = faceManager.extract(faceBmp); // Register Stage
                 } else {
                     float score = faceAntiSpoofing.antiSpoofing(cropCopyBitmap);
-                    LOGGER.d("Score: %f", score);
+                    LOGGER.d("Spoof score: %f", score);
 
                     if (score > faceAntiSpoofing.THRESHOLD){
                         color = Color.RED;
                         label = "Khuôn mặt không hợp lệ!";
                     }
-
                     else{
                         Result result = faceManager.verify(faceBmp);    // Verify Stage
+                        LOGGER.d("Rec score: %f", result.similarity);
 
-                        if (result != null ) {
+                        if (result != null) {
                             int eye_w = Math.round(faceCrop.getWidth() / 10) * 2; // Eye width
                             int eye_h = Math.round(faceCrop.getHeight() / 10) * 2; // Eye height
 

@@ -14,12 +14,15 @@ import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FaceManager {
 
     public static final int MODEL_INPUT_SIZE = 224;
-    public static final int CONFIDENCE_THRESHOLD = 710;
+    public static final double CONFIDENCE_THRESHOLD1 = 0.7;
+    public static final double CONFIDENCE_THRESHOLD2 = 2.0;
     private MLHandler mlHandler;
     private List<FaceData> faceBank;
 
@@ -46,13 +49,13 @@ public class FaceManager {
                 FaceData faceData = faceBank.get(i);
                 Result result = new Result();
                 result.faceData = faceData;
-                result.similarity = Math.round(1000 * MyMaths.cosineSimilarity(candidateFaceData.feature, faceData.feature));
+                result.similarity = MyMaths.cosineSimilarity(candidateFaceData.feature, faceData.feature);
                 results.add(result);
             }
         }
         Collections.sort(results, (o1, o2) -> Double.compare(Math.abs(o2.similarity), Math.abs(o1.similarity)));
         for (int i = 0; i < results.size(); i++) {
-            if (Math.abs(results.get(i).similarity) >= CONFIDENCE_THRESHOLD && finalResults.size() < countResult) {
+            if (Math.abs(results.get(i).similarity) >= CONFIDENCE_THRESHOLD1 && finalResults.size() < countResult) {
                 finalResults.add(results.get(i));
             }
         }
@@ -60,8 +63,28 @@ public class FaceManager {
     }
 
     public Result verify(Bitmap candidateFace) {
-        List<Result> results = verify(candidateFace, 1);
-        if (results.size() > 0) return results.get(0);
+        List<Result> results = verify(candidateFace, 5);
+        if (results.size() > 0)
+        {
+            int key = 0;
+            Map<Integer, Integer> map = new HashMap<Integer, Integer>();
+            for (int i = 0; i < results.size(); i++)
+            {
+                key = results.get(i).faceData.userId;
+                if (map.containsKey(key))
+                    map.put(key, map.get(key) + 1 - i/10);
+                else
+                    map.put(key, 1 - i/10);
+            }
+            for (int i = 0; i < results.size(); i++)
+            {
+                key = results.get(i).faceData.userId;
+                results.get(i).similarity += map.get(key);
+            }
+            Collections.sort(results, (o1, o2) -> Double.compare(Math.abs(o2.similarity), Math.abs(o1.similarity)));
+            if (results.get(0).similarity > CONFIDENCE_THRESHOLD2)
+                return results.get(0);
+        }
         return null;
     }
 
