@@ -530,7 +530,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                             String result2 = eyeClassifier.classify(grayscale2);
 
                             if (result1.equals("Close") && result2.equals("Close")){
-                                label = String.format("%s || Hai mắt đang đóng!", getApp().getUser(result.faceData.userId).name);
+                                label = String.format("%s || Xin mở to đôi mắt!", getApp().getUser(result.faceData.userId).name);
                                 color = Color.RED;
                             }
                             else{
@@ -585,7 +585,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                             updatePreviewUI();
                         } else {
                             isTakenPicture = false;
-                            Toast.makeText(this, "Mặt không hợp lệ", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Ảnh không hợp lệ", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
