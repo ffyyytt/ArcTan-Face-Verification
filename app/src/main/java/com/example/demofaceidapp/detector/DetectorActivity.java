@@ -517,8 +517,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         Result result = faceManager.verify(faceBmp);    // Verify Stage
 
                         if (result != null) {
-                            int eye_w = Math.round(faceCrop.getWidth() / 10) * 2; // Eye width
-                            int eye_h = Math.round(faceCrop.getHeight() / 18) * 2; // Eye height
+                            int eye_w = Math.round(faceCrop.getWidth() / 12) * 2; // Eye width
+                            int eye_h = Math.round(faceCrop.getHeight() / 20) * 2; // Eye height
 
                             Bitmap eye_img1 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[0], eye_w, eye_h);
                             Bitmap eye_img2 = FaceUtils.cropEyeFromOri(alignCropCopyBitmap, selectedBox.landmark[1], eye_w, eye_h);
