@@ -73,7 +73,7 @@ public class MLHandler {
     public float[] extractEyeFeature(TensorImage tensorImage) {
         TensorBuffer feature = TensorBuffer.createFixedSize(new int[]{1, 2}, DataType.FLOAT32);
         model.run(imageProcessor.process(tensorImage).getBuffer(), feature.getBuffer());
-        return feature.getFloatArray();
+        return MyMaths.norm(feature.getFloatArray());
     }
 
     public float[] extractEyeFeature(Bitmap bitmap) {

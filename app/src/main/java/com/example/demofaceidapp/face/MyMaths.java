@@ -27,46 +27,20 @@ public class MyMaths {
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    public static double norm(double[] data) {
-        return (Math.sqrt(sumSquares(data)));
+    public static float[] norm(float[] _data) {
+        float sss = (float) Math.sqrt(sumSquares(_data));
+        float[] data = _data.clone();
+        for (int i = 0; i < data.length; i++)
+        {
+            data[i] = data[i]/sss;
+        }
+        return data;
     }
 
-    public static double norm(int[] data) {
-        return (Math.sqrt(sumSquares(data)));
-    }
-
-    public static double sumSquares(double[] data) {
-        double ans = 0.0;
+    public static float sumSquares(float[] data) {
+        float ans = 0.0f;
         for (int k = 0; k < data.length; k++) {
             ans += data[k] * data[k];
-        }
-        return (ans);
-    }
-
-    public static double sumSquares(double[][] data) {
-        double ans = 0.0;
-        for (int k = 0; k < data.length; k++) {
-            for (int l = 0; l < data[k].length; l++) {
-                ans += data[k][l] * data[k][l];
-            }
-        }
-        return (ans);
-    }
-
-    public static int sumSquares(int[] data) {
-        int ans = 0;
-        for (int k = 0; k < data.length; k++) {
-            ans += data[k] * data[k];
-        }
-        return (ans);
-    }
-
-    public static int sumSquares(int[][] data) {
-        int ans = 0;
-        for (int k = 0; k < data.length; k++) {
-            for (int l = 0; l < data[k].length; l++) {
-                ans += data[k][l] * data[k][l];
-            }
         }
         return (ans);
     }
