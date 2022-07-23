@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Demo FaceIDApp</string>
+    <string name="app_name">Face Identification</string>
 
     <string name="camera_guide_face_left">Hướng sang trái</string>
     <string name="camera_guide_face_right">Hướng sang phải</string>

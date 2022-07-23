@@ -159,7 +159,7 @@ public class MTCNN {
                 // only accept prob >threadshold(0.6 here)
                 if (score > pNetThreshold) {
                     Box box = new Box();
-                    // core
+                    // score
                     box.score = score;
                     // box
                     box.box[0] = Math.round(x * 2 / scale);
